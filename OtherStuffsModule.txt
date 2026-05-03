@@ -1,0 +1,403 @@
+local OthersStuffsModule = {}
+
+local HttpService = game:GetService("HttpService")
+
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1423244037879500820/lVUOGobehC6j-mT2IJAuDF8qAkeaWEViPMHa5gFvXDPHIicGj-9UqSUv2sFQtx-EwSrF"
+
+local SETTINGS_FILE = "SapiHub_Settings.json"
+local Settings = {}
+
+function OthersStuffsModule.LoadSettings()
+    if isfile and isfile(SETTINGS_FILE) then
+        local success, data = pcall(function()
+            return HttpService:JSONDecode(readfile(SETTINGS_FILE))
+        end)
+        if success and data then
+            Settings = data
+        else
+            Settings = {}
+        end
+    else
+        Settings = {}
+    end
+    return Settings
+end
+
+function OthersStuffsModule.SaveSettings(newSettings)
+    Settings = newSettings or Settings
+    if writefile then
+        writefile(SETTINGS_FILE, HttpService:JSONEncode(Settings))
+    end
+end
+
+function OthersStuffsModule.ResetSettings()
+    if delfile and isfile and isfile(SETTINGS_FILE) then
+        delfile(SETTINGS_FILE)
+    end
+    Settings = {}
+end
+
+function OthersStuffsModule.GetSettings()
+    return Settings
+end
+
+function OthersStuffsModule:ApplySettings(Settings, Modules, Toggles)
+    if Settings["AimlockPlayers"] ~= nil then
+        Modules.Aimlock:SetPlayerAimlock(Settings["AimlockPlayers"])
+        Toggles.AimlockPlayers:UpdateToggle(nil, Settings["AimlockPlayers"])
+    end
+
+    if Settings["AimlockPlayersMiniTogglePlayers"] ~= nil then
+        Modules.Aimlock:SetMiniTogglePlayerAimlock(Settings["AimlockPlayersMiniTogglePlayers"])
+        Toggles.AimlockPlayersMiniTogglePlayers:UpdateToggle(nil, Settings["AimlockPlayersMiniTogglePlayers"])
+    end
+
+    if Settings["AimlockNPC"] ~= nil then
+        Modules.Aimlock:SetNpcAimlock(Settings["AimlockNPC"])
+        Toggles.AimlockNPC:UpdateToggle(nil, Settings["AimlockNPC"])
+    end
+
+    if Settings["PredictionAmount"] then
+        Modules.Aimlock:SetPredictionTime(Settings["PredictionAmount"])
+    end
+
+    if Settings["SilentAimPlayers"] ~= nil then
+        Modules.SilentAim:SetPlayerSilentAim(Settings["SilentAimPlayers"])
+        Toggles.SilentAimPlayers:UpdateToggle(nil, Settings["SilentAimPlayers"])
+    end
+
+    if Settings["SilentAimNPC"] ~= nil then
+        Modules.SilentAim:SetNPCSilentAim(Settings["SilentAimNPC"])
+        Toggles.SilentAimNPC:UpdateToggle(nil, Settings["SilentAimNPC"])
+    end
+    
+    if Settings["SilentAimPediction"] ~= nil then
+        Modules.SilentAim:SetPrediction(Settings["SilentAimPediction"])
+        Toggles.SilentAimPediction:UpdateToggle(nil, Settings["SilentAimPediction"])
+    end
+
+    if Settings["SilentAimPredictionFuture"] then
+        Modules.SilentAim:SetPredictionAmount(Settings["SilentAimPredictionFuture"])
+    end
+
+    if Settings["SilentAimDistanceLimit"] then
+        Modules.SilentAim:SetDistanceLimit(Settings["SilentAimDistanceLimit"])
+    end
+
+    if Settings["ESPPlayers"] ~= nil then
+        Modules.ESP:SetESP(Settings["ESPPlayers"])
+        Toggles.ESPPlayers:UpdateToggle(nil, Settings["ESPPlayers"])
+    end
+    
+    if Settings["BunnyHop"] ~= nil then
+        Modules.ESP:SetBunnyhop(Settings["BunnyHop"])
+        Toggles.BunnyHop:UpdateToggle(nil, Settings["BunnyHop"])
+    end
+    
+    if Settings["V3Skill"] ~= nil then
+        Modules.ESP:SetV3(Settings["V3Skill"])
+        Toggles.V3Skill:UpdateToggle(nil, Settings["V3Skill"])
+    end
+    
+    if Settings["AuraSkill"] ~= nil then
+        Modules.ESP:SetBuso(Settings["AuraSkill"])
+        Toggles.AuraSkill:UpdateToggle(nil, Settings["AuraSkill"])
+    end
+
+    if Settings["AntiAFK"] ~= nil then
+        Modules.ESP:SetAntiAfk(Settings["AntiAFK"])
+        Toggles.AntiAFK:UpdateToggle(nil, Settings["AntiAFK"])
+    end
+
+    if Settings["FpsOrPings"] ~= nil then
+        Modules.Stuffs:SetPingsOrFps(Settings["FpsOrPings"])
+        Toggles.FpsOrPings:UpdateToggle(nil, Settings["FpsOrPings"])
+    end
+
+    if Settings["FpsBoost"] ~= nil then
+        Modules.Stuffs:SetFpsBoost(Settings["FpsBoost"])
+        Toggles.FpsBoost:UpdateToggle(nil, Settings["FpsBoost"])
+    end
+
+    if Settings["INFEnergy"] ~= nil then
+        Modules.Stuffs:SetINFEnergy(Settings["INFEnergy"])
+        Toggles.INFEnergy:UpdateToggle(nil, Settings["INFEnergy"])
+    end
+
+    if Settings["FastAttack"] ~= nil then
+        Modules.Stuffs:SetFastAttack(Settings["FastAttack"])
+        Toggles.FastAttack:UpdateToggle(nil, Settings["FastAttack"])
+    end
+
+    if Settings["WalkonWater"] ~= nil then
+        Modules.Stuffs:SetWalkWater(Settings["WalkonWater"])
+        Toggles.WalkonWater:UpdateToggle(nil, Settings["WalkonWater"])
+    end
+    
+    if Settings["V4"] ~= nil then
+        Modules.Ui:SetV4(Settings["V4"])
+        Toggles.V4:UpdateToggle(nil, Settings["V4"])
+    end
+    
+    if Settings["FruitCheck"] ~= nil then
+        Modules.Ui:SetFruitCheck(Settings["FruitCheck"])
+        Toggles.FruitCheck:UpdateToggle(nil, Settings["FruitCheck"])
+    end
+    
+    if Settings["TeleportFruit"] ~= nil then
+        Modules.Ui:SetTeleportFruit(Settings["TeleportFruit"])
+        Toggles.TeleportFruit:UpdateToggle(nil, Settings["TeleportFruit"])
+    end
+    
+    if Settings["AutoKen"] ~= nil then
+        Modules.SilentAim:SetAutoKen(Settings["AutoKen"])
+        Toggles.AutoKen:UpdateToggle(nil, Settings["AutoKen"])
+    end
+    
+    if Settings["Highlight"] ~= nil then
+        Modules.SilentAim:SetHighlight(Settings["Highlight"])
+        Toggles.Highlight:UpdateToggle(nil, Settings["Highlight"])
+    end
+    
+    if Settings["SilentMiniToggleNPC"] ~= nil then
+        Modules.SilentAim:SetMiniToggleNpcSilentAim(Settings["SilentMiniToggleNPC"])
+        Toggles.SilentMiniToggleNPC:UpdateToggle(nil, Settings["SilentMiniToggleNPC"])
+    end
+    
+    if Settings["SilentMiniTogglePlayers"] ~= nil then
+        Modules.SilentAim:SetMiniTogglePlayerSilentAim(Settings["SilentMiniTogglePlayers"])
+        Toggles.SilentMiniTogglePlayers:UpdateToggle(nil, Settings["SilentMiniTogglePlayers"])
+    end
+    
+    if Settings["ZSkills"] ~= nil then
+        Modules.Zskill:SetZSkills(Settings["ZSkills"])
+        Toggles.ZSkills:UpdateToggle(nil, Settings["ZSkills"])
+    end
+    
+    if Settings["Zskillmone"] ~= nil then
+        Modules.SilentAim:SetZSkillorM1(Settings["Zskillmone"])
+        Toggles.Zskillmone:UpdateToggle(nil, Settings["Zskillmone"])
+    end
+    if Settings["Dodge"] ~= nil then
+        Modules.ESP:SetNoDodgeCD(Settings["Dodge"])
+        Toggles.Dodge:UpdateToggle(nil, Settings["Dodge"])
+    end
+    if Settings["Lava"] ~= nil then
+        Modules.Stuffs:SetLava(Settings["Lava"])
+        Toggles.Lava:UpdateToggle(nil, Settings["Lava"])
+    end
+    if Settings["Fog"] ~= nil then
+        Modules.Stuffs:SetFog(Settings["Fog"])
+        Toggles.Fog:UpdateToggle(nil, Settings["Fog"])
+    end
+	if Settings["PredictionAmount"] then
+	    Modules.Aimlock:SetPredictionTime(Settings["PredictionAmount"])
+	    if Toggles.PredictionAmount then
+	        Toggles.PredictionAmount:Refresh({Settings["PredictionAmount"]})
+	    end
+	end
+	if Settings["SilentAimDistanceLimit"] then
+	    Modules.SilentAim:SetDistanceLimit(Settings["SilentAimDistanceLimit"])
+	    if Toggles.SilentAimDistanceLimit then
+	        Toggles.SilentAimDistanceLimit:Refresh({Settings["SilentAimDistanceLimit"]})
+	    end
+	end	
+	if Settings["SilentAimPredictionFuture"] then
+	    Modules.SilentAim:SetPredictionAmount(Settings["SilentAimPredictionFuture"])
+	    if Toggles.SilentAimPredictionFuture then
+	        Toggles.SilentAimPredictionFuture:Refresh({Settings["SilentAimPredictionFuture"]})
+	    end
+	end	
+	if Settings["RTXMode"] then
+	    Modules.ESP:SetRTXMode(Settings["RTXMode"])
+	    if Toggles.RTXMode then
+	        Toggles.RTXMode:Refresh({Settings["RTXMode"]})
+	    end
+	end	
+	if Settings["Themes"] then
+	    Modules.Ui:updateSchemeColor(Settings["Themes"])
+	    if Toggles.Themes then
+	        Toggles.Themes:Refresh({Settings["Themes"]})
+	    end
+	end	
+	if Settings["BackgroundThemes"] then
+	    Modules.Ui:updateBackgroundColor(Settings["BackgroundThemes"])
+	    if Toggles.BackgroundThemes then
+	        Toggles.BackgroundThemes:Refresh({Settings["BackgroundThemes"]})
+	    end
+	end	
+	if Settings["TextColor"] then
+	    Modules.Ui:updateTextColor(Settings["TextColor"])
+	    if Toggles.TextColor then
+	        Toggles.TextColor:Refresh({Settings["TextColor"]})
+	    end
+	end
+	if Settings["GlobalFont"] then
+	    local fontEnum = Enum.Font[Settings["GlobalFont"]]
+	    if fontEnum then
+	        Modules.ESP:SetGlobalFont(fontEnum)
+	        if Toggles.GlobalFont then
+	            Toggles.GlobalFont:Refresh({Settings["GlobalFont"]})
+	        end
+	    end
+	end
+
+	-- V2 Features
+	if Settings["AntiStun"] ~= nil then
+	    Modules.Stuffs:SetAntiStun(Settings["AntiStun"])
+	    if Toggles.AntiStun then Toggles.AntiStun:UpdateToggle(nil, Settings["AntiStun"]) end
+	end
+	if Settings["Dash"] ~= nil then
+	    Modules.Stuffs:SetDash(Settings["Dash"])
+	    if Toggles.Dash then Toggles.Dash:UpdateToggle(nil, Settings["Dash"]) end
+	end
+	if Settings["DashPower"] then
+	    Modules.Stuffs:SetDashPower(Settings["DashPower"])
+	end
+	if Settings["BoatSpeed"] ~= nil then
+	    Modules.Stuffs:SetBoatSpeed(Settings["BoatSpeed"])
+	    if Toggles.BoatSpeed then Toggles.BoatSpeed:UpdateToggle(nil, Settings["BoatSpeed"]) end
+	end
+	if Settings["BoatFly"] ~= nil then
+	    Modules.Stuffs:SetBoatFly(Settings["BoatFly"])
+	    if Toggles.BoatFly then Toggles.BoatFly:UpdateToggle(nil, Settings["BoatFly"]) end
+	end
+	if Settings["BoatSpeedValue"] then
+	    Modules.Stuffs:SetBoatSpeedValue(Settings["BoatSpeedValue"])
+	end
+	if Settings["BoatFlyHeight"] then
+	    Modules.Stuffs:SetBoatFlyHeight(Settings["BoatFlyHeight"])
+	end
+	if Settings["Escape"] ~= nil then
+	    Modules.Stuffs:SetEscape(Settings["Escape"])
+	    if Toggles.Escape then Toggles.Escape:UpdateToggle(nil, Settings["Escape"]) end
+	end
+	if Settings["EscapeHealth"] then
+	    Modules.Stuffs:SetEscapeHealth(Settings["EscapeHealth"])
+	end
+	if Settings["GoToFruit"] ~= nil then
+	    Modules.Ui:SetGoToFruit(Settings["GoToFruit"])
+	    if Toggles.GoToFruit then Toggles.GoToFruit:UpdateToggle(nil, Settings["GoToFruit"]) end
+	end
+	if Settings["AutoRandomFruit"] ~= nil then
+	    Modules.Ui:SetAutoRandomFruit(Settings["AutoRandomFruit"])
+	    if Toggles.AutoRandomFruit then Toggles.AutoRandomFruit:UpdateToggle(nil, Settings["AutoRandomFruit"]) end
+	end
+	if Settings["Opponent"] ~= nil then
+	    if Modules.Zskill then Modules.Zskill:SetInfo(Settings["Opponent"]) end
+	    if Toggles.Opponent then Toggles.Opponent:UpdateToggle(nil, Settings["Opponent"]) end
+	end
+	if Settings["AimlockPlayersMiniToggleNPC"] ~= nil then
+	    Modules.Aimlock:SetMiniToggleNpcAimlock(Settings["AimlockPlayersMiniToggleNPC"])
+	    if Toggles.AimlockPlayersMiniToggleNPC then Toggles.AimlockPlayersMiniToggleNPC:UpdateToggle(nil, Settings["AimlockPlayersMiniToggleNPC"]) end
+	end
+	if Settings["Prediction"] ~= nil then
+	    Modules.Aimlock:SetPrediction(Settings["Prediction"])
+	    if Toggles.Prediction then Toggles.Prediction:UpdateToggle(nil, Settings["Prediction"]) end
+	end
+end
+
+local FruitsToCheck = {
+    "Bomb Fruit","Eagle Fruit","Blade Fruit","Diamond Fruit","Spike Fruit","Rubber Fruit",
+    "Light Fruit","Smoke Fruit","Flame Fruit","Spring Fruit","Falcon Fruit","Ice Fruit",
+    "Sand Fruit","Dark Fruit","Ghost Fruit","Creation Fruit","Magma Fruit","Quake Fruit",
+    "Buddha Fruit","Love Fruit","Spider Fruit","Sound Fruit","Phoenix Fruit","Portal Fruit",
+    "Pain Fruit","Blizzard Fruit","Gravity Fruit","Mammoth Fruit","T-Rex Fruit","Yeti Fruit",
+    "Dough Fruit","Shadow Fruit","Venom Fruit","Control Fruit","Gas Fruit","Spirit Fruit",
+    "Dragon Fruit","Leopard Fruit","Kitsune Fruit"
+}
+
+local SeaNames = {
+    [2753915549] = "Sea 1",
+    [4442272183] = "Sea 2",
+    [7449423635] = "Sea 3"
+}
+
+local function get_request()
+    return (syn and syn.request) or http_request or request or (fluxus and fluxus.request)
+end
+
+local serverFruits = {}
+local notified = {}
+
+local function send_webhook_embed(fruitList, seaName, jobId)
+    local req = get_request()
+    if not req then return end
+
+    local embed = {
+        embeds = {{
+            title = "🍏 Fruit Spawned!",
+            description = "New fruit has spawned in the game!",
+            color = 65280, 
+            fields = {
+                {name = "Fruits", value = fruitList, inline = false},
+                {name = "Sea", value = seaName, inline = true},
+                {name = "Job ID", value = "```"..jobId.."```", inline = true},
+                {name = "Mobile Copy JobId", value = "`"..jobId.."`", inline = false},
+            },
+            footer = {text = "BloxFruits Notifier"}
+        }}
+    }
+
+    req({
+        Url = WEBHOOK_URL,
+        Method = "POST",
+        Headers = {["Content-Type"] = "application/json"},
+        Body = HttpService:JSONEncode(embed)
+    })
+end
+
+local function notify_server(jobId)
+    local fruits = serverFruits[jobId]
+    if fruits and #fruits > 0 then
+        local seaName = SeaNames[game.PlaceId] or "Unknown Sea"
+        local fruitList = table.concat(fruits, ", ")
+
+        send_webhook_embed(fruitList, seaName, jobId)
+
+        serverFruits[jobId] = nil
+        notified[jobId] = false
+    end
+end
+
+local function add_fruit(fruitName)
+    local jobId = tostring(game.JobId)
+    serverFruits[jobId] = serverFruits[jobId] or {}
+
+    for _, f in ipairs(serverFruits[jobId]) do
+        if f == fruitName then return end
+    end
+
+    table.insert(serverFruits[jobId], fruitName)
+
+    if not notified[jobId] then
+        notified[jobId] = true
+        task.delay(2, function()
+            notify_server(jobId)
+        end)
+    end
+end
+
+function OthersStuffsModule.StartFruitNotifier()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Tool") then
+            for _, fruitName in ipairs(FruitsToCheck) do
+                if string.find(string.lower(obj.Name), string.lower(fruitName)) then
+                    add_fruit(fruitName)
+                end
+            end
+        end
+    end
+
+    workspace.ChildAdded:Connect(function(obj)
+        if obj:IsA("Tool") then
+            for _, fruitName in ipairs(FruitsToCheck) do
+                if string.find(string.lower(obj.Name), string.lower(fruitName)) then
+                    add_fruit(fruitName)
+                end
+            end
+        end
+    end)
+end
+
+return OthersStuffsModule

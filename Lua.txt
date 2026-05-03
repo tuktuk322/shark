@@ -1,0 +1,1914 @@
+--[[
+    ═══════════════════════════════════════════════════════════════════════════
+    ARAKS HUB | V17 - SUPREME EDITION (Fluent UI Rebuild)
+    DEVELOPER: ARAKS
+    LIBRARY: Fluent by dawid-scripts (Advanced Modern UI)
+    ═══════════════════════════════════════════════════════════════════════════
+]]
+
+------------------------------------------------------------------------
+-- [ CORE ]
+------------------------------------------------------------------------
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+local VIM = game:GetService("VirtualInputManager")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local Config = {
+    TargetPart = "HumanoidRootPart", MaxDistance = 1500, WalkSpeed = 16, JumpPower = 50,
+    AimbotActive = false, AntiStun = false, ESP_Box = false, ESP_Name = false,
+    ESP_HealthBar = false, ESP_Level = false, ESP_Distance = false, WaterWalk = false,
+    AutoKill = false, RandomKill = false, TargetPlayer = nil, SkillSpam = false,
+    FastWait = 0.0044, EscapeActive = false, EscapeHealth = 14345, FruitESP = false,
+    GoToFruitActive = false, AutoLevel = false, WeaponType = "Combat", StatType = "Melee",
+    AutoStats = false, FastAttack = false, FastAttackSpeed = 0.05
+}
+
+local CurrentTarget = nil
+local Net = ReplicatedStorage.Modules.Net
+local RegisterAttack = Net["RE/RegisterAttack"]
+local RegisterHit = Net["RE/RegisterHit"]
+local CommF_ = ReplicatedStorage.Remotes.CommF_
+
+local function GetSessionID()
+    local ok, result = pcall(function()
+        local SendHitsToServer = getrenv()._G.SendHitsToServer
+        local CombatThread = getupvalues(SendHitsToServer)[1]
+        return tostring(LocalPlayer.UserId):sub(2,4)..tostring(CombatThread):sub(11,15)
+    end)
+    return ok and result or ""
+end
+
+local function GetCurrentSea()
+    local p = game.PlaceId
+    if p == 2753915549 then return 1 elseif p == 4442272183 then return 2 elseif p == 7449423635 then return 3 end
+    return 1
+end
+
+local function TP(cf)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local dist = (char.HumanoidRootPart.Position - cf.Position).Magnitude
+    if dist < 10 then char.HumanoidRootPart.CFrame = cf return end
+    local tween = TweenService:Create(char.HumanoidRootPart, TweenInfo.new(dist / 150, Enum.EasingStyle.Linear), {CFrame = cf})
+    tween:Play()
+    tween.Completed:Wait()
+end
+
+------------------------------------------------------------------------
+-- [ WINDOW & TABS ]
+------------------------------------------------------------------------
+local Window = Fluent:CreateWindow({
+    Title = "ARAKS HUB | V17", SubTitle = "SUPREME EDITION",
+    TabWidth = 120, Size = UDim2.fromOffset(520, 360),
+    Acrylic = false, Theme = "Amethyst", MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+task.spawn(function()
+    task.wait(0.5)
+    if game.CoreGui:FindFirstChild("ARAKS_BackgroundGui") then game.CoreGui.ARAKS_BackgroundGui:Destroy() end
+    local BGGui = Instance.new("ScreenGui")
+    BGGui.Name = "ARAKS_BackgroundGui"
+    BGGui.ResetOnSpawn = false
+    BGGui.IgnoreGuiInset = true
+    BGGui.DisplayOrder = -100
+    BGGui.Parent = game.CoreGui
+    local BGImage = Instance.new("ImageLabel")
+    BGImage.Parent = BGGui
+    BGImage.Size = UDim2.new(1,0,1,0)
+    BGImage.Image = "https://files.catbox.moe/wvwy7n.png"
+    BGImage.BackgroundTransparency = 1
+    BGImage.ImageTransparency = 0
+    BGImage.ScaleType = Enum.ScaleType.Crop
+end)
+
+local Tabs = {
+    Dev = Window:AddTab({ Title = "Developer | المطور 👑", Icon = "crown" }),
+    Farm = Window:AddTab({ Title = "Auto Farm | التلفيل", Icon = "wheat" }),
+    Fruits = Window:AddTab({ Title = "Fruits | الفواكه 🍎", Icon = "apple" }),
+    Sea = Window:AddTab({ Title = "Sea | البحر 🌊", Icon = "water" }),
+    Combat = Window:AddTab({ Title = "Combat | القتال", Icon = "swords" }),
+    Visuals = Window:AddTab({ Title = "Visuals | الرادار", Icon = "eye" }),
+    Movement = Window:AddTab({ Title = "Movement | الحركة", Icon = "zap" }),
+    Settings = Window:AddTab({ Title = "Settings | الإعدادات", Icon = "settings" })
+}
+
+------------------------------------------------------------------------
+-- MODULE 1: DEVELOPER INFO
+------------------------------------------------------------------------
+do
+    Tabs.Dev:AddParagraph({ Title = "📜 Rights | حقوق الملكية", Content = "" })
+    Tabs.Dev:AddParagraph({ Title = "ARAKS HUB | Official", Content = "Owner: ARAKS\nThis script is fully protected.\nالحقوق محفوظة لـ ARAKS - يمنع السرقة أو التعديل نهائياً." })
+    Tabs.Dev:AddButton({ Title = "Discord Server | سيرفر الديسكورد 💬", Description = "نسخ رابط الديسكورد", Callback = function() setclipboard("https://discord.gg/p6kPN4DueP") Fluent:Notify({Title = "ARAKS HUB", Content = "Link Copied!", Duration = 5}) end })
+    Tabs.Dev:AddButton({ Title = "YouTube Channel | قناة اليوتيوب 📺", Description = "نسخ رابط اليوتيوب", Callback = function() setclipboard("https://youtube.com/@araks01?si=EZeiKzyL2RqVMPEy") Fluent:Notify({Title = "ARAKS HUB", Content = "Link Copied!", Duration = 5}) end })
+end
+
+------------------------------------------------------------------------
+-- MODULE 2: AUTO FARM / AUTO LEVEL SYSTEM (مع نظام الضرب الجديد - مربوط بالتفعيل)
+------------------------------------------------------------------------
+do
+    Tabs.Farm:AddParagraph({Title = "⚡ Leveling System | نظام رفع المستوى", Content = ""})
+    Tabs.Farm:AddToggle("AutoLevelToggle", { Title = "Auto Level | تشغيل التلفيل", Default = false, Callback = function(v) Config.AutoLevel = v end })
+    Tabs.Farm:AddDropdown("WeaponDropdown", { Title = "Weapon | السلاح", Values = {"Combat", "Sword", "Fruit", "Gun"}, Default = "Combat", Multi = false, Callback = function(v) Config.WeaponType = v end })
+    Tabs.Farm:AddParagraph({Title = "📊 Stats | النقاط", Content = ""})
+    Tabs.Farm:AddToggle("AutoStatsToggle", { Title = "Auto Stats | توزيع تلقائي", Default = false, Callback = function(v) Config.AutoStats = v end })
+    Tabs.Farm:AddDropdown("StatTypeDropdown", { Title = "Stat Type | النوع", Values = {"Melee", "Defense", "Sword", "Gun", "Blox Fruit"}, Default = "Melee", Multi = false, Callback = function(v) Config.StatType = v end })
+
+    local QuestTable_Sea1 = {
+        {1,9,"Bandit",1,"BanditQuest1",CFrame.new(1059.3,15.4,1550.5),CFrame.new(1046,27,1561),false,nil},
+        {10,14,"Monkey",1,"JungleQuest",CFrame.new(-1598,36.8,153),CFrame.new(-1449,68,11),false,nil},
+        {15,29,"Gorilla",2,"JungleQuest",CFrame.new(-1598,36.8,153),CFrame.new(-1130,40,-525),false,nil},
+        {30,39,"Pirate",1,"BuggyQuest1",CFrame.new(-1141,4.7,3832.2),CFrame.new(-1104,14,3896),false,nil},
+        {40,59,"Brute",2,"BuggyQuest1",CFrame.new(-1141,4.7,3832.2),CFrame.new(-1140,15,4323),false,nil},
+        {60,74,"Desert Bandit",1,"DesertQuest",CFrame.new(894,5,4392),CFrame.new(925,6,4482),false,nil},
+        {75,89,"Desert Officer",2,"DesertQuest",CFrame.new(894,5,4392),CFrame.new(1608,9,4371),false,nil},
+        {90,99,"Snow Bandit",1,"SnowQuest",CFrame.new(1389,88,-1298),CFrame.new(1354,87,-1394),false,nil},
+        {100,119,"Snowman",2,"SnowQuest",CFrame.new(1389,88,-1298),CFrame.new(1202,145,-1550),false,nil},
+        {120,149,"Chief Petty Officer",1,"MarineQuest2",CFrame.new(-5039,27,4325),CFrame.new(-4881,23,4274),false,nil},
+        {150,174,"Sky Bandit",1,"SkyQuest",CFrame.new(-4839,716,-2619),CFrame.new(-4953,296,-2899),false,nil},
+        {175,189,"Dark Master",2,"SkyQuest",CFrame.new(-4839,716,-2619),CFrame.new(-5260,391,-2229),false,nil},
+        {190,209,"Prisoner",1,"PrisonerQuest",CFrame.new(5307,1,475),CFrame.new(5099,1,474),false,nil},
+        {210,249,"Dangerous Prisoner",2,"PrisonerQuest",CFrame.new(5307,1,475),CFrame.new(5655,16,866),false,nil},
+        {250,274,"Toga Warrior",1,"ColosseumQuest",CFrame.new(-1580,6,-2986),CFrame.new(-1820,52,-2741),false,nil},
+        {275,299,"Gladiator",2,"ColosseumQuest",CFrame.new(-1580,6,-2986),CFrame.new(-1293,56,-3339),false,nil},
+        {300,324,"Military Soldier",1,"MagmaQuest",CFrame.new(-5313,11,8515),CFrame.new(-5411,11,8454),false,nil},
+        {325,374,"Military Spy",2,"MagmaQuest",CFrame.new(-5313,11,8515),CFrame.new(-5803,86,8829),false,nil},
+        {375,399,"Fishman Warrior",1,"FishmanQuest",CFrame.new(61122,18,1568),CFrame.new(60878,18,1544),true,Vector3.new(61164,12,1820)},
+        {400,449,"Fishman Commando",2,"FishmanQuest",CFrame.new(61122,18,1568),CFrame.new(61923,18,1494),true,Vector3.new(61164,12,1820)},
+        {450,474,"God's Guard",1,"SkyExp1Quest",CFrame.new(-4721,843,-1950),CFrame.new(-4710,845,-1927),true,Vector3.new(-4608,873,-1668)},
+        {475,524,"Shanda",2,"SkyExp1Quest",CFrame.new(-7859,5544,-381),CFrame.new(-7678,5566,-497),true,Vector3.new(-7895,5547,-380)},
+        {525,549,"Royal Squad",1,"SkyExp2Quest",CFrame.new(-7906,5635,-1412),CFrame.new(-7624,5658,-1467),false,nil},
+        {550,624,"Royal Soldier",2,"SkyExp2Quest",CFrame.new(-7906,5635,-1412),CFrame.new(-7837,5646,-1791),false,nil},
+        {625,649,"Galley Pirate",1,"FountainQuest",CFrame.new(5259,37,4050),CFrame.new(5551,79,3930),false,nil},
+        {650,699,"Galley Captain",2,"FountainQuest",CFrame.new(5259,37,4050),CFrame.new(5437,38,3913),false,nil}
+    }
+
+    local QuestTable_Sea2 = {
+        {700,724,"Swan Pirate",1,"Area1Quest",CFrame.new(-429,73,1836),CFrame.new(-443,73,1884),false,nil},
+        {725,774,"Factory Staff",2,"Area1Quest",CFrame.new(-429,73,1836),CFrame.new(-538,73,1939),false,nil},
+        {775,799,"Diamond",1,"Area2Quest",CFrame.new(632,73,1277),CFrame.new(276,73,2199),false,nil},
+        {800,849,"Other Diamond",2,"Area2Quest",CFrame.new(632,73,1277),CFrame.new(276,73,2199),false,nil},
+        {850,899,"Zombie",1,"GreenQuest",CFrame.new(-2432,73,-3295),CFrame.new(-2481,73,-3382),false,nil},
+        {900,949,"Vampire",2,"GreenQuest",CFrame.new(-2432,73,-3295),CFrame.new(-2701,73,-3389),false,nil},
+        {950,974,"Haunted Mummy",1,"GraveyardQuest",CFrame.new(-5513,475,-794),CFrame.new(-5546,475,-887),false,nil},
+        {975,1024,"Reborn Skeleton",2,"GraveyardQuest",CFrame.new(-5513,475,-794),CFrame.new(-5721,475,-939),false,nil},
+        {1000,1024,"Snowman [Lv. 1000]",1,"SnowMountainQuest",CFrame.new(615,400,-5251),CFrame.new(612,400,-5352),false,nil},
+        {1025,1074,"Frosty",2,"SnowMountainQuest",CFrame.new(615,400,-5251),CFrame.new(519,400,-5461),false,nil},
+        {1075,1124,"Magma Ninja",1,"HotColdQuest",CFrame.new(-5430,15,-5295),CFrame.new(-5460,15,-5399),false,nil},
+        {1125,1174,"Lava Pirate",2,"HotColdQuest",CFrame.new(-5430,15,-5295),CFrame.new(-5600,15,-5487),false,nil},
+        {1175,1199,"Ice Viking",1,"IceQuest2",CFrame.new(6124,15,-107),CFrame.new(6211,15,-190),false,nil},
+        {1200,1249,"Boat Master",2,"IceQuest2",CFrame.new(6124,15,-107),CFrame.new(6350,15,-240),false,nil},
+        {1250,1299,"Galley Pirate [Lv. 1250]",1,"ForgottenQuest",CFrame.new(-3053,235,-10158),CFrame.new(-3103,235,-10263),false,nil},
+        {1300,1374,"Marine Commodore",2,"ForgottenQuest",CFrame.new(-3053,235,-10158),CFrame.new(-3213,235,-10360),false,nil},
+        {1375,1424,"Cursed Captain",1,"CursedShipQuest",CFrame.new(916,126,33217),CFrame.new(960,126,33294),false,nil},
+        {1425,1499,"Darkbeard",2,"CursedShipQuest",CFrame.new(916,126,33217),CFrame.new(1015,126,33401),false,nil}
+    }
+
+    local QuestTable_Sea3 = {
+        {1500,1524,"Pirate Millionaire",1,"PortQuest",CFrame.new(-290,44,5351),CFrame.new(-355,44,5286),false,nil},
+        {1525,1574,"Pistol Billionaire",2,"PortQuest",CFrame.new(-290,44,5351),CFrame.new(-476,44,5192),false,nil},
+        {1575,1599,"Dragon Crew Warrior",1,"HydraQuest",CFrame.new(5228,15,355),CFrame.new(5296,15,289),false,nil},
+        {1600,1649,"Dragon Crew Archer",2,"HydraQuest",CFrame.new(5228,15,355),CFrame.new(5413,15,195),false,nil},
+        {1650,1674,"Jungle Pirate",1,"TreeQuest",CFrame.new(2175,28,-6740),CFrame.new(2219,28,-6840),false,nil},
+        {1675,1724,"Musketeer Pirate",2,"TreeQuest",CFrame.new(2175,28,-6740),CFrame.new(2345,28,-6947),false,nil},
+        {1725,1774,"Marine Captain",1,"TurtleQuest",CFrame.new(-12482,332,-7577),CFrame.new(-12535,332,-7668),false,nil},
+        {1775,1824,"Marine Commodore [Lv. 1775]",2,"TurtleQuest",CFrame.new(-12482,332,-7577),CFrame.new(-12650,332,-7770),false,nil},
+        {1825,1849,"Zombie Master",1,"HauntedQuest",CFrame.new(-8651,118,5906),CFrame.new(-8710,118,5824),false,nil},
+        {1850,1924,"Vampire Master",2,"HauntedQuest",CFrame.new(-8651,118,5906),CFrame.new(-8830,118,5730),false,nil},
+        {1925,1974,"Cake Guard",1,"SeaQuest",CFrame.new(-68786,15,38064),CFrame.new(-68830,15,37974),false,nil},
+        {1975,2074,"Biscuit Guard",2,"SeaQuest",CFrame.new(-68786,15,38064),CFrame.new(-68940,15,37870),false,nil},
+        {2075,2099,"Jungle Pirate [Lv. 2075]",1,"TikiQuest",CFrame.new(-12100,56,-6235),CFrame.new(-12156,56,-6328),false,nil},
+        {2100,2174,"Musketeer Pirate [Lv. 2100]",2,"TikiQuest",CFrame.new(-12100,56,-6235),CFrame.new(-12270,56,-6435),false,nil},
+        {2175,2199,"Butler",1,"MansionQuest",CFrame.new(-12877,343,-7463),CFrame.new(-12930,343,-7556),false,nil},
+        {2200,2274,"Steel Worker",2,"MansionQuest",CFrame.new(-12877,343,-7463),CFrame.new(-13040,343,-7650),false,nil},
+        {2600,2624,"Reef Bandit",1,"SubmergedQuest",CFrame.new(-12482,332,-7577),CFrame.new(-68786,15,38064),false,nil},
+        {2625,2649,"Coral Pirate",2,"SubmergedQuest",CFrame.new(-12482,332,-7577),CFrame.new(-68830,15,37974),false,nil},
+        {2650,2674,"Sea Chanter",1,"SubmergedQuest2",CFrame.new(-12482,332,-7577),CFrame.new(-68940,15,37870),false,nil},
+        {2675,2694,"Ocean Prophet",2,"SubmergedQuest2",CFrame.new(-12482,332,-7577),CFrame.new(-69050,15,37750),false,nil},
+        {2695,2719,"High Disciple",1,"SubmergedQuest3",CFrame.new(-12482,332,-7577),CFrame.new(-69160,15,37630),false,nil},
+        {2720,2749,"Grand Devotee",2,"SubmergedQuest3",CFrame.new(-12482,332,-7577),CFrame.new(-69270,15,37510),false,nil},
+        {2750,2774,"Abyssal Warrior",1,"AbyssQuest",CFrame.new(-12482,332,-7577),CFrame.new(-69380,15,37390),false,nil},
+        {2775,2799,"Abyssal King",2,"AbyssQuest",CFrame.new(-12482,332,-7577),CFrame.new(-69490,15,37270),false,nil}
+    }
+
+    local function GetQuestForLevel()
+        local level = LocalPlayer.Data.Level.Value
+        local sea = GetCurrentSea()
+        local qTable = (sea == 1 and QuestTable_Sea1) or (sea == 2 and QuestTable_Sea2) or QuestTable_Sea3
+        for _, q in ipairs(qTable) do
+            if level >= q[1] and level <= q[2] then
+                return {MobName = q[3], LevelQuest = q[4], NameQuest = q[5], QuestNPCPos = q[6], MobPos = q[7], NeedEntrance = q[8], EntrancePos = q[9]}
+            end
+        end
+        return nil
+    end
+
+    local function EquipWeapon()
+        local char = LocalPlayer.Character
+        if not char then return end
+        for _, v in pairs(LocalPlayer.Backpack:GetChildren()) do
+            if v:IsA("Tool") and (v.ToolTip == Config.WeaponType or v.Name:find(Config.WeaponType)) then
+                char.Humanoid:EquipTool(v)
+                break
+            end
+        end
+    end
+
+    -- [ نظام الضرب الجديد - مربوط بالتفعيل فقط ]
+    local function GetBladeHits_Farm()
+        local targets = {}
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return targets end
+        local hrp = char.HumanoidRootPart
+        
+        for _, part in pairs({workspace.Enemies, workspace.Characters}) do
+            for _, v in pairs(part:GetChildren()) do
+                if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Head") and v:FindFirstChild("Humanoid") then
+                    if (v.HumanoidRootPart.Position - hrp.Position).Magnitude < 200 then
+                        table.insert(targets, v)
+                    end
+                end
+            end
+        end
+        return targets
+    end
+
+    local function AttackAll_Farm()
+        if not Config.AutoLevel then return end  -- مهم: فقط يشتغل إذا التلفيل شغال
+        local player = LocalPlayer
+        local character = player.Character
+        if not character then return end
+        local equippedWeapon = character:FindFirstChild("EquippedWeapon")
+        if not equippedWeapon then return end
+        local enemies = GetBladeHits_Farm()
+        if #enemies > 0 then
+            local netModule = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+            netModule:WaitForChild("RE/RegisterAttack"):FireServer(-math.huge)
+            local args = {nil, {}}
+            for i, v in pairs(enemies) do
+                if not args[1] then args[1] = v.Head end
+                args[2][i] = {v, v.HumanoidRootPart}
+            end
+            netModule:WaitForChild("RE/RegisterHit"):FireServer(unpack(args))
+        end
+    end
+
+    -- [ الحلقة الرئيسية - مربوط بالتفعيل ]
+    task.spawn(function()
+        while true do
+            task.wait()
+            if Config.AutoLevel then
+                AttackAll_Farm()
+            end
+        end
+    end)
+
+    -- [ الجزء الثاني من النظام الجديد للتفيل ]
+    local Farm_Players = Players
+    local Farm_RunService = RunService
+    local Farm_ReplicatedStorage = ReplicatedStorage
+    local Farm_Workspace = workspace
+    local Farm_VirtualInputManager = VIM
+
+    local Farm_Player = Farm_Players.LocalPlayer
+    local Farm_Modules = Farm_ReplicatedStorage:WaitForChild("Modules")
+    local Farm_Net = Farm_Modules:WaitForChild("Net")
+    local Farm_RegisterAttack = Farm_Net:WaitForChild("RE/RegisterAttack")
+    local Farm_RegisterHit = Farm_Net:WaitForChild("RE/RegisterHit")
+    local Farm_ShootGunEvent = Farm_Net:WaitForChild("RE/ShootGunEvent")
+    local Farm_GunValidator = Farm_ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Validator2")
+
+    local Farm_Config = {
+        AttackDistance = 200,
+        AttackMobs = true,
+        AttackPlayers = true,
+        AttackCooldown = 0.2,
+        ComboResetTime = 0.3,
+        MaxCombo = 4,
+        HitboxLimbs = {"RightLowerArm", "RightUpperArm", "LeftLowerArm", "LeftUpperArm", "RightHand", "LeftHand"},
+        AutoClickEnabled = true
+    }
+
+    local FarmFastAttack = {}
+    FarmFastAttack.__index = FarmFastAttack
+
+    function FarmFastAttack.new()
+        local self = setmetatable({
+            Debounce = 0,
+            ComboDebounce = 0,
+            ShootDebounce = 0,
+            M1Combo = 0,
+            EnemyRootPart = nil,
+            Connections = {},
+            Overheat = {Dragonstorm = {MaxOverheat = 3, Cooldown = 0, TotalOverheat = 0, Distance = 350, Shooting = false}},
+            ShootsPerTarget = {["Dual Flintlock"] = 2},
+            SpecialShoots = {["Skull Guitar"] = "TAP", ["Bazooka"] = "Position", ["Cannon"] = "Position", ["Dragonstorm"] = "Overheat"}
+        }, FarmFastAttack)
+        
+        pcall(function()
+            self.CombatFlags = require(Farm_Modules.Flags).COMBAT_REMOTE_THREAD
+            self.ShootFunction = getupvalue(require(Farm_ReplicatedStorage.Controllers.CombatController).Attack, 9)
+            local LocalScript = Farm_Player:WaitForChild("PlayerScripts"):FindFirstChildOfClass("LocalScript")
+            if LocalScript and getsenv then
+                self.HitFunction = getsenv(LocalScript)._G.SendHitsToServer
+            end
+        end)
+        
+        return self
+    end
+
+    function FarmFastAttack:IsEntityAlive(entity)
+        local humanoid = entity and entity:FindFirstChild("Humanoid")
+        return humanoid and humanoid.Health > 0
+    end
+
+    function FarmFastAttack:CheckStun(Character, Humanoid, ToolTip)
+        local Stun = Character:FindFirstChild("Stun")
+        local Busy = Character:FindFirstChild("Busy")
+        if Humanoid.Sit and (ToolTip == "Sword" or ToolTip == "Melee" or ToolTip == "Blox Fruit") then
+            return false
+        elseif Stun and Stun.Value > 0 or Busy and Busy.Value then
+            return false
+        end
+        return true
+    end
+
+    function FarmFastAttack:GetBladeHitsFarm(Character, Distance)
+        local Position = Character:GetPivot().Position
+        local BladeHits = {}
+        Distance = Distance or Farm_Config.AttackDistance
+        
+        local function ProcessTargets(Folder, CanAttack)
+            for _, Enemy in ipairs(Folder:GetChildren()) do
+                if Enemy ~= Character and self:IsEntityAlive(Enemy) then
+                    local BasePart = Enemy:FindFirstChild(Farm_Config.HitboxLimbs[math.random(#Farm_Config.HitboxLimbs)]) or Enemy:FindFirstChild("HumanoidRootPart")
+                    if BasePart and (Position - BasePart.Position).Magnitude <= Distance then
+                        if not self.EnemyRootPart then
+                            self.EnemyRootPart = BasePart
+                        else
+                            table.insert(BladeHits, {Enemy, BasePart})
+                        end
+                    end
+                end
+            end
+        end
+        
+        if Farm_Config.AttackMobs then ProcessTargets(Farm_Workspace.Enemies) end
+        if Farm_Config.AttackPlayers then ProcessTargets(Farm_Workspace.Characters, true) end
+        
+        return BladeHits
+    end
+
+    function FarmFastAttack:GetClosestEnemy(Character, Distance)
+        local BladeHits = self:GetBladeHitsFarm(Character, Distance)
+        local Closest, MinDistance = nil, math.huge
+        
+        for _, Hit in ipairs(BladeHits) do
+            local Magnitude = (Character:GetPivot().Position - Hit[2].Position).Magnitude
+            if Magnitude < MinDistance then
+                MinDistance = Magnitude
+                Closest = Hit[2]
+            end
+        end
+        return Closest
+    end
+
+    function FarmFastAttack:GetCombo()
+        local Combo = (tick() - self.ComboDebounce) <= Farm_Config.ComboResetTime and self.M1Combo or 0
+        Combo = Combo >= Farm_Config.MaxCombo and 1 or Combo + 1
+        self.ComboDebounce = tick()
+        self.M1Combo = Combo
+        return Combo
+    end
+
+    function FarmFastAttack:ShootInTarget(TargetPosition)
+        local Character = Farm_Player.Character
+        if not self:IsEntityAlive(Character) then return end
+        
+        local Equipped = Character:FindFirstChildOfClass("Tool")
+        if not Equipped or Equipped.ToolTip ~= "Gun" then return end
+        
+        local Cooldown = Equipped:FindFirstChild("Cooldown") and Equipped.Cooldown.Value or 0.3
+        if (tick() - self.ShootDebounce) < Cooldown then return end
+        
+        local ShootType = self.SpecialShoots[Equipped.Name] or "Normal"
+        if ShootType == "Position" or (ShootType == "TAP" and Equipped:FindFirstChild("RemoteEvent")) then
+            Equipped:SetAttribute("LocalTotalShots", (Equipped:GetAttribute("LocalTotalShots") or 0) + 1)
+            Farm_GunValidator:FireServer(self:GetValidator2())
+            
+            if ShootType == "TAP" then
+                Equipped.RemoteEvent:FireServer("TAP", TargetPosition)
+            else
+                Farm_ShootGunEvent:FireServer(TargetPosition)
+            end
+            self.ShootDebounce = tick()
+        else
+            Farm_VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+            task.wait(0.05)
+            Farm_VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+            self.ShootDebounce = tick()
+        end
+    end
+
+    function FarmFastAttack:GetValidator2()
+        local v1 = getupvalue(self.ShootFunction, 15)
+        local v2 = getupvalue(self.ShootFunction, 13)
+        local v3 = getupvalue(self.ShootFunction, 16)
+        local v4 = getupvalue(self.ShootFunction, 17)
+        local v5 = getupvalue(self.ShootFunction, 14)
+        local v6 = getupvalue(self.ShootFunction, 12)
+        local v7 = getupvalue(self.ShootFunction, 18)
+        
+        local v8 = v6 * v2
+        local v9 = (v5 * v2 + v6 * v1) % v3
+        v9 = (v9 * v3 + v8) % v4
+        v5 = math.floor(v9 / v3)
+        v6 = v9 - v5 * v3
+        v7 = v7 + 1
+        
+        setupvalue(self.ShootFunction, 15, v1)
+        setupvalue(self.ShootFunction, 13, v2)
+        setupvalue(self.ShootFunction, 16, v3)
+        setupvalue(self.ShootFunction, 17, v4)
+        setupvalue(self.ShootFunction, 14, v5)
+        setupvalue(self.ShootFunction, 12, v6)
+        setupvalue(self.ShootFunction, 18, v7)
+        
+        return math.floor(v9 / v4 * 16777215), v7
+    end
+
+    function FarmFastAttack:UseNormalClick(Character, Humanoid, Cooldown)
+        self.EnemyRootPart = nil
+        local BladeHits = self:GetBladeHitsFarm(Character)
+        
+        if self.EnemyRootPart then
+            Farm_RegisterAttack:FireServer(Cooldown)
+            if self.CombatFlags and self.HitFunction then
+                self.HitFunction(self.EnemyRootPart, BladeHits)
+            else
+                Farm_RegisterHit:FireServer(self.EnemyRootPart, BladeHits)
+            end
+        end
+    end
+
+    function FarmFastAttack:UseFruitM1(Character, Equipped, Combo)
+        local Targets = self:GetBladeHitsFarm(Character)
+        if not Targets[1] then return end
+        
+        local Direction = (Targets[1][2].Position - Character:GetPivot().Position).Unit
+        Equipped.LeftClickRemote:FireServer(Direction, Combo)
+    end
+
+    function FarmFastAttack:Attack()
+        if not Config.AutoLevel then return end  -- مهم: مربوط بالتفعيل
+        if not Farm_Config.AutoClickEnabled or (tick() - self.Debounce) < Farm_Config.AttackCooldown then return end
+        local Character = Farm_Player.Character
+        if not Character or not self:IsEntityAlive(Character) then return end
+        
+        local Humanoid = Character.Humanoid
+        local Equipped = Character:FindFirstChildOfClass("Tool")
+        if not Equipped then return end
+        
+        local ToolTip = Equipped.ToolTip
+        if not table.find({"Melee", "Blox Fruit", "Sword", "Gun"}, ToolTip) then return end
+        
+        local Cooldown = Equipped:FindFirstChild("Cooldown") and Equipped.Cooldown.Value or Farm_Config.AttackCooldown
+        if not self:CheckStun(Character, Humanoid, ToolTip) then return end
+        
+        local Combo = self:GetCombo()
+        Cooldown = Cooldown + (Combo >= Farm_Config.MaxCombo and 0.05 or 0)
+        self.Debounce = Combo >= Farm_Config.MaxCombo and ToolTip ~= "Gun" and (tick() + 0.05) or tick()
+        
+        if ToolTip == "Blox Fruit" and Equipped:FindFirstChild("LeftClickRemote") then
+            self:UseFruitM1(Character, Equipped, Combo)
+        elseif ToolTip == "Gun" then
+            local Target = self:GetClosestEnemy(Character, 120)
+            if Target then
+                self:ShootInTarget(Target.Position)
+            end
+        else
+            self:UseNormalClick(Character, Humanoid, Cooldown)
+        end
+    end
+
+    local FarmAttackInstance = FarmFastAttack.new()
+    table.insert(FarmAttackInstance.Connections, Farm_RunService.Stepped:Connect(function()
+        if Config.AutoLevel then  -- مربوط بالتفعيل
+            FarmAttackInstance:Attack()
+        end
+    end))
+
+    pcall(function()
+        for _, v in pairs(getgc(true)) do
+            if typeof(v) == "function" and iscclosure(v) then
+                local name = debug.getinfo(v).name
+                if name == "Attack" or name == "attack" or name == "RegisterHit" then
+                    hookfunction(v, function(...)
+                        if Config.AutoLevel then  -- مربوط بالتفعيل
+                            FarmAttackInstance:Attack()
+                        end
+                        return v(...)
+                    end)
+                end
+            end
+        end
+    end)
+
+    -- [ نظام الضرب المبسط للتفيل - مربوط بالتفعيل ]
+    local function SimpleAttack_Farm()
+        if not Config.AutoLevel then return end
+        local bladehits = {}
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        local hrp = char.HumanoidRootPart
+        
+        for _, v in pairs(workspace.Enemies:GetChildren()) do
+            if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 
+            and (v.HumanoidRootPart.Position - hrp.Position).Magnitude <= 65 then
+                table.insert(bladehits, v)
+            end
+        end
+        for _, v in pairs(workspace.Characters:GetChildren()) do
+            if v.Name ~= LocalPlayer.Name and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 
+            and (v.HumanoidRootPart.Position - hrp.Position).Magnitude <= 65 then
+                table.insert(bladehits, v)
+            end
+        end
+        
+        if #bladehits == 0 then return end
+        local args = {[1] = nil, [2] = {}, [4] = "078da341"}
+        local netModule = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+        local regAttack = netModule:WaitForChild("RE/RegisterAttack")
+        local regHit = netModule:WaitForChild("RE/RegisterHit")
+        
+        for r, v in pairs(bladehits) do
+            regAttack:FireServer(0)
+            if not args[1] then args[1] = v.Head end
+            args[2][r] = {[1] = v, [2] = v.HumanoidRootPart}
+        end
+        regHit:FireServer(unpack(args))
+    end
+
+    -- [ الحلقة الرئيسية للتفيل ]
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            if Config.AutoLevel then
+                pcall(function()
+                    local level = LocalPlayer.Data.Level.Value
+                    if level >= 2800 then return end
+                    local quest = GetQuestForLevel()
+                    if not quest then return end
+                    local hasQuest = LocalPlayer.PlayerGui.Main.Quest.Visible
+                    if not hasQuest then
+                        TP(quest.QuestNPCPos)
+                        CommF_:InvokeServer("StartQuest", quest.NameQuest, quest.LevelQuest)
+                    else
+                        local target = nil
+                        for _, v in pairs(workspace.Enemies:GetChildren()) do
+                            if v.Name == quest.MobName and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                                target = v
+                                break
+                            end
+                        end
+                        if target then
+                            while Config.AutoLevel and target.Humanoid.Health > 0 and LocalPlayer.PlayerGui.Main.Quest.Visible do
+                                local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                                if hrp then
+                                    hrp.CFrame = target.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0)
+                                    hrp.Velocity = Vector3.new(0,0,0)
+                                end
+                                EquipWeapon()
+                                SimpleAttack_Farm()
+                                task.wait()
+                            end
+                        else
+                            TP(quest.MobPos)
+                        end
+                    end
+                end)
+            end
+        end
+    end)
+
+    task.spawn(function()
+        while task.wait(1) do
+            if Config.AutoStats then CommF_:InvokeServer("AddPoint", Config.StatType, 3) end
+        end
+    end)
+end
+
+------------------------------------------------------------------------
+-- MODULE 3: COMBAT SYSTEM (مع Fast Attack)
+------------------------------------------------------------------------
+do
+    Tabs.Combat:AddParagraph({Title = "⚔️ Main Combat | أساسيات القتال", Content = ""})
+    Tabs.Combat:AddToggle("AimbotToggle", { Title = "Aimbot (Silent) | تفعيل الآيم بوت", Default = false, Callback = function(v) Config.AimbotActive = v end })
+    Tabs.Combat:AddParagraph({Title = "⚡ Fast Attack | الضرب السريع", Content = ""})
+    Tabs.Combat:AddToggle("FastAttackToggle", { Title = "Fast Attack | تسريع الضرب", Default = false, Callback = function(v) Config.FastAttack = v end })
+    Tabs.Combat:AddDropdown("FastAttackSpeedDropdown", { Title = "Attack Speed | سرعة الضرب", Values = {"Ultra Fast (0.02)", "Fast (0.05)", "Normal (0.1)", "Slow (0.2)", "Very Slow (0.4)"}, Default = "Fast (0.05)", Multi = false, Callback = function(v) local speeds = {["Ultra Fast (0.02)"] = 0.02, ["Fast (0.05)"] = 0.05, ["Normal (0.1)"] = 0.1, ["Slow (0.2)"] = 0.2, ["Very Slow (0.4)"] = 0.4}; Config.FastAttackSpeed = speeds[v] or 0.05 end })
+    Tabs.Combat:AddToggle("AntiStunToggle", { Title = "Anti-Stun | تفادي التثبيت 🛡️", Default = false, Callback = function(v) Config.AntiStun = v end })
+    Tabs.Combat:AddParagraph({Title = "🎯 Auto Hunt | الصيد التلقائي", Content = ""})
+    Tabs.Combat:AddToggle("RandomKillToggle", { Title = "Random Kill | القتل العشوائي (الأقرب)", Default = false, Callback = function(v) Config.RandomKill = v end })
+
+    local function GetNames()
+        local t = {}
+        for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer then table.insert(t, p.Name) end end
+        return t
+    end
+
+    local PlayerDropdown = Tabs.Combat:AddDropdown("TargetDropdown", { Title = "Target Player | اختر ضحية محددة", Values = GetNames(), Default = nil, Multi = false, Callback = function(val) Config.TargetPlayer = Players:FindFirstChild(val) end })
+    Tabs.Combat:AddToggle("AutoKillToggle", { Title = "Auto Kill | بدء الإبادة (التصاق)", Default = false, Callback = function(v) Config.AutoKill = v end })
+    Tabs.Combat:AddToggle("SkillSpamToggle", { Title = "Skill Spam | سبام مهارات", Default = false, Callback = function(v) Config.SkillSpam = v end })
+
+    task.spawn(function()
+        while task.wait(5) do pcall(function() PlayerDropdown:SetValues(GetNames()) end) end
+    end)
+end
+
+------------------------------------------------------------------------
+-- MODULE 4: VISUALS / ESP SYSTEM
+------------------------------------------------------------------------
+do
+    Tabs.Visuals:AddToggle("ESPBoxToggle", { Title = "ESP Box | إظهار الإطارات", Default = false, Callback = function(v) Config.ESP_Box = v end })
+    Tabs.Visuals:AddToggle("ESPNameToggle", { Title = "ESP Name | كشف الأسماء", Default = false, Callback = function(v) Config.ESP_Name = v end })
+    Tabs.Visuals:AddToggle("ESPHealthToggle", { Title = "Health Bar | شريط الصحة", Default = false, Callback = function(v) Config.ESP_HealthBar = v end })
+    Tabs.Visuals:AddToggle("ESPLevelToggle", { Title = "ESP Level | كشف المستوى", Default = false, Callback = function(v) Config.ESP_Level = v end })
+    Tabs.Visuals:AddToggle("ESPDistanceToggle", { Title = "ESP Distance | كشف المسافة 📏", Default = false, Callback = function(v) Config.ESP_Distance = v end })
+    Tabs.Visuals:AddToggle("FruitESPToggle", { Title = "Fruit ESP | كاشف الفواكه 🍎", Default = false, Callback = function(v) Config.FruitESP = v end })
+
+    local function CreateESP(Player)
+        local Box = Drawing.new("Square")
+        local HealthBarOutline = Drawing.new("Square")
+        local HealthBar = Drawing.new("Square")
+        local NameTag = Drawing.new("Text")
+        local LevelTag = Drawing.new("Text")
+        local DistTag = Drawing.new("Text")
+        Box.Thickness = 1; Box.Filled = false; Box.Color = Color3.fromRGB(255,0,0)
+        HealthBarOutline.Thickness = 1; HealthBarOutline.Filled = true; HealthBarOutline.Color = Color3.fromRGB(0,0,0)
+        HealthBar.Thickness = 1; HealthBar.Filled = true; HealthBar.Color = Color3.fromRGB(0,255,0)
+        NameTag.Size = 14; NameTag.Center = true; NameTag.Outline = true; NameTag.Color = Color3.new(1,1,1)
+        LevelTag.Size = 13; LevelTag.Center = true; LevelTag.Outline = true; LevelTag.Color = Color3.fromRGB(255,255,0)
+        DistTag.Size = 13; DistTag.Center = true; DistTag.Outline = true; DistTag.Color = Color3.fromRGB(200,200,200)
+
+        RunService.RenderStepped:Connect(function()
+            if Player.Character and Player.Character:FindFirstChild("Humanoid") and Player.Character:FindFirstChild("HumanoidRootPart") and Player ~= LocalPlayer then
+                local Root = Player.Character.HumanoidRootPart
+                local Hum = Player.Character.Humanoid
+                local Pos, OnScreen = Camera:WorldToViewportPoint(Root.Position)
+                if OnScreen then
+                    local SizeX = 2300 / Pos.Z
+                    local SizeY = SizeX * 1.5
+                    local BoxPos = Vector2.new(Pos.X - SizeX/2, Pos.Y - SizeY/2)
+                    Box.Visible = Config.ESP_Box
+                    Box.Size = Vector2.new(SizeX, SizeY)
+                    Box.Position = BoxPos
+                    if Config.ESP_HealthBar then
+                        local HP = Hum.Health / Hum.MaxHealth
+                        HealthBarOutline.Visible = true
+                        HealthBarOutline.Size = Vector2.new(2, SizeY)
+                        HealthBarOutline.Position = Vector2.new(BoxPos.X - 5, BoxPos.Y)
+                        HealthBar.Visible = true
+                        HealthBar.Size = Vector2.new(2, SizeY * HP)
+                        HealthBar.Position = Vector2.new(BoxPos.X - 5, BoxPos.Y + (SizeY * (1 - HP)))
+                        HealthBar.Color = Color3.fromHSV(HP * 0.3, 1, 1)
+                    else HealthBarOutline.Visible = false; HealthBar.Visible = false end
+                    NameTag.Visible = Config.ESP_Name
+                    NameTag.Text = Player.Name
+                    NameTag.Position = Vector2.new(Pos.X, BoxPos.Y - 20)
+                    local Data = Player:FindFirstChild("Data") or Player:FindFirstChild("leaderstats")
+                    local Lvl = Data and (Data:FindFirstChild("Level") or Data:FindFirstChild("Mivai"))
+                    LevelTag.Visible = Config.ESP_Level
+                    LevelTag.Text = "Lv. " .. (Lvl and Lvl.Value or "???")
+                    LevelTag.Position = Vector2.new(Pos.X, BoxPos.Y - 35)
+                    if Config.ESP_Distance then
+                        local Distance = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - Root.Position).Magnitude)
+                        DistTag.Visible = true
+                        DistTag.Text = "[" .. Distance .. "m]"
+                        DistTag.Position = Vector2.new(Pos.X, BoxPos.Y + SizeY + 5)
+                    else DistTag.Visible = false end
+                else Box.Visible = false; HealthBarOutline.Visible = false; HealthBar.Visible = false; NameTag.Visible = false; LevelTag.Visible = false; DistTag.Visible = false end
+            else Box.Visible = false; HealthBarOutline.Visible = false; HealthBar.Visible = false; NameTag.Visible = false; LevelTag.Visible = false; DistTag.Visible = false end
+        end)
+    end
+
+    for _, p in pairs(Players:GetPlayers()) do CreateESP(p) end
+    Players.PlayerAdded:Connect(CreateESP)
+
+    local FruitTag = Drawing.new("Text")
+    FruitTag.Size = 14; FruitTag.Center = true; FruitTag.Outline = true; FruitTag.Color = Color3.fromRGB(0,255,100); FruitTag.Visible = false
+    RunService.RenderStepped:Connect(function()
+        if Config.FruitESP then
+            local found = false
+            for _, v in pairs(workspace:GetChildren()) do
+                if v:IsA("Tool") or (v:IsA("Model") and v:FindFirstChild("Handle") and v.Name:lower():find("fruit")) then
+                    local handle = v:FindFirstChild("Handle") or v
+                    local Pos, OnScreen = Camera:WorldToViewportPoint(handle.Position)
+                    if OnScreen then
+                        local dist = math.floor((LocalPlayer.Character.HumanoidRootPart.Position - handle.Position).Magnitude)
+                        FruitTag.Text = "🍎 " .. v.Name .. " [" .. dist .. "m]"
+                        FruitTag.Position = Vector2.new(Pos.X, Pos.Y)
+                        FruitTag.Visible = true
+                        found = true
+                        break
+                    end
+                end
+            end
+            if not found then FruitTag.Visible = false end
+        else FruitTag.Visible = false end
+    end)
+end
+
+------------------------------------------------------------------------
+-- MODULE 5: MOVEMENT SYSTEM
+------------------------------------------------------------------------
+do
+    Tabs.Movement:AddDropdown("SpeedDropdown", {
+        Title = "Speed | السرعة",
+        Values = {"Normal (16)", "Fast (50)", "Very Fast (100)", "Ultra (200)", "Max (500)"},
+        Default = "Normal (16)",
+        Multi = false,
+        Callback = function(v)
+            local speeds = {["Normal (16)"] = 16, ["Fast (50)"] = 50, ["Very Fast (100)"] = 100, ["Ultra (200)"] = 200, ["Max (500)"] = 500}
+            Config.WalkSpeed = speeds[v] or 16
+        end
+    })
+
+    Tabs.Movement:AddDropdown("JumpDropdown", { Title = "Jump | القفزة", Values = {"Normal (50)", "High (100)", "Very High (200)", "Ultra (350)", "Max (500)"}, Default = "Normal (50)", Multi = false, Callback = function(v) local jumps = {["Normal (50)"]=50,["High (100)"]=100,["Very High (200)"]=200,["Ultra (350)"]=350,["Max (500)"]=500}; Config.JumpPower = jumps[v] or 50 end })
+    Tabs.Movement:AddToggle("WaterWalkToggle", { Title = "Water Walk | المشي على الماء", Default = false, Callback = function(v) Config.WaterWalk = v end })
+    Tabs.Movement:AddParagraph({Title = "🚀 Escape System | نظام الهروب", Content = ""})
+    Tabs.Movement:AddToggle("EscapeToggle", { Title = "Sky Escape | الهروب للسماء", Default = false, Callback = function(v) Config.EscapeActive = v end })
+    Tabs.Movement:AddDropdown("EscapeHealthDropdown", { Title = "Health Limit | حد الهروب ❤️", Values = {"Low (1000)", "Medium (5000)", "High (10000)", "Max (14345)"}, Default = "Max (14345)", Multi = false, Callback = function(v) local vals = {["Low (1000)"]=1000,["Medium (5000)"]=5000,["High (10000)"]=10000,["Max (14345)"]=14345}; Config.EscapeHealth = vals[v] or 14345 end })
+
+    local WaterPart = Instance.new("Part")
+    WaterPart.Name = "ARAKS_Platform"
+    WaterPart.Size = Vector3.new(20,1,20)
+    WaterPart.Transparency = 1
+    WaterPart.Anchored = true
+    WaterPart.CanCollide = false
+    WaterPart.Parent = workspace
+
+    RunService.RenderStepped:Connect(function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local Root = LocalPlayer.Character.HumanoidRootPart
+            local Hum = LocalPlayer.Character.Humanoid
+            Hum.WalkSpeed = Config.WalkSpeed
+            Hum.JumpPower = Config.JumpPower
+            if Config.WaterWalk then WaterPart.CanCollide = true; WaterPart.Position = Vector3.new(Root.Position.X, 0.8, Root.Position.Z)
+            else WaterPart.CanCollide = false end
+            if Config.EscapeActive and Hum.Health <= Config.EscapeHealth and Hum.Health > 0 then Root.CFrame = Root.CFrame * CFrame.new(0, 9000, 0) end
+        end
+    end)
+end
+
+------------------------------------------------------------------------
+-- MODULE 6: ANTI-STUN ENGINE
+------------------------------------------------------------------------
+do
+    RunService.RenderStepped:Connect(function()
+        if Config.AntiStun and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local Root = LocalPlayer.Character.HumanoidRootPart
+            local Hum = LocalPlayer.Character.Humanoid
+            if Hum.PlatformStand then Hum.PlatformStand = false end
+            if Hum.Sit then Hum.Sit = false end
+            local stunValue = LocalPlayer.Character:FindFirstChild("Stun")
+            local busyValue = LocalPlayer.Character:FindFirstChild("Busy")
+            if stunValue and stunValue.Value > 0 then stunValue.Value = 0 end
+            if busyValue and busyValue.Value then busyValue.Value = false end
+            for _, v in pairs(Root:GetChildren()) do if v:IsA("BodyVelocity") or v:IsA("BodyGyro") or v:IsA("BodyPosition") then v:Destroy() end end
+            for _, track in pairs(Hum:GetPlayingAnimationTracks()) do if track.Name:lower():find("stun") or track.Name:lower():find("hit") or track.Name:lower():find("freeze") then track:Stop() end end
+        end
+    end)
+end
+
+------------------------------------------------------------------------
+-- MODULE 7: AIMBOT & TARGET FINDER
+------------------------------------------------------------------------
+do
+    local TracerLine = Drawing.new("Line"); TracerLine.Thickness = 1.2; TracerLine.Color = Color3.fromRGB(255,0,0)
+    RunService.RenderStepped:Connect(function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local nearest, lastDist = nil, Config.MaxDistance
+            for _, ply in pairs(Players:GetPlayers()) do
+                if ply ~= LocalPlayer and ply.Character and ply.Character:FindFirstChild(Config.TargetPart) then
+                    local dist = (ply.Character[Config.TargetPart].Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+                    if dist < lastDist then lastDist = dist; nearest = ply end
+                end
+            end
+            CurrentTarget = nearest
+            if Config.AimbotActive and CurrentTarget then
+                local Pos, OnScreen = Camera:WorldToViewportPoint(CurrentTarget.Character[Config.TargetPart].Position)
+                if OnScreen then TracerLine.Visible = true; TracerLine.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2); TracerLine.To = Vector2.new(Pos.X, Pos.Y)
+                else TracerLine.Visible = false end
+            else TracerLine.Visible = false end
+        end
+    end)
+
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
+        
+        if method == "FireServer" and self.Name == "RemoteEvent" and Config.AimbotActive and CurrentTarget then
+            for i, v in pairs(args) do
+                if typeof(v) == "Vector3" then 
+                    args[i] = CurrentTarget.Character[Config.TargetPart].Position 
+                end
+            end
+        end
+        
+        return oldNamecall(self, unpack(args))
+    end)
+end
+
+------------------------------------------------------------------------
+-- MODULE 8: COMBAT / HUNT LOOP
+------------------------------------------------------------------------
+do
+    task.spawn(function()
+        while task.wait() do
+            pcall(function()
+                if not Config.AutoLevel then
+                    local HuntTarget = nil
+                    if Config.RandomKill then HuntTarget = CurrentTarget
+                    elseif Config.AutoKill and Config.TargetPlayer then HuntTarget = Config.TargetPlayer end
+                    if HuntTarget and HuntTarget.Character and HuntTarget.Character:FindFirstChild("HumanoidRootPart") then
+                        LocalPlayer.Character.HumanoidRootPart.CFrame = HuntTarget.Character.HumanoidRootPart.CFrame * CFrame.new(0,0,5)
+                        local CombatRemote = ReplicatedStorage:FindFirstChild("RigControllerEvent", true) or ReplicatedStorage:FindFirstChild("CombatEvent", true)
+                        if CombatRemote then CombatRemote:FireServer("Attack") end
+                        local Hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+                        if Hum then for _, track in pairs(Hum:GetPlayingAnimationTracks()) do track:Stop(Config.FastWait) end end
+                        if Config.SkillSpam then for _, k in pairs({"Z","X","C","V","F"}) do VIM:SendKeyEvent(true, Enum.KeyCode[k], false, game); task.wait(0.2); VIM:SendKeyEvent(false, Enum.KeyCode[k], false, game) end end
+                    end
+                end
+            end)
+        end
+    end)
+end
+
+------------------------------------------------------------------------
+-- MODULE 9: FAST ATTACK ENGINE
+------------------------------------------------------------------------
+do
+    local function GetBladeHits()
+        local targets = {}
+        local function GetDistance(v)
+            return (v.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude
+        end
+        
+        for _, part in pairs({game.Workspace.Enemies, game.Workspace.Characters}) do
+            for _, v in pairs(part:GetChildren()) do
+                if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Head") and v:FindFirstChild("Humanoid") then
+                    if GetDistance(v.HumanoidRootPart) < 200 then
+                        table.insert(targets, v)
+                    end
+                end
+            end
+        end
+
+        return targets
+    end
+
+    local function AttackAll()
+        local player = game.Players.LocalPlayer
+        local character = player.Character
+        if not character then return end
+
+        local equippedWeapon = character:FindFirstChild("EquippedWeapon")
+        if not equippedWeapon then return end
+
+        local enemies = GetBladeHits()
+        if #enemies > 0 then
+            local netModule = game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Net")
+            netModule:WaitForChild("RE/RegisterAttack"):FireServer(-math.huge)
+            
+            local args = {nil, {}}
+            for i, v in pairs(enemies) do
+                if not args[1] then
+                    args[1] = v.Head
+                end
+                args[2][i] = {v, v.HumanoidRootPart}
+            end
+            
+            netModule:WaitForChild("RE/RegisterHit"):FireServer(unpack(args))
+        end
+    end
+
+    spawn(function()
+        while task.wait() do 
+            if Config.FastAttack then
+                AttackAll() 
+            end
+        end
+    end)
+
+    local FA_Players = game:GetService("Players")
+    local FA_RunService = game:GetService("RunService")
+    local FA_ReplicatedStorage = game:GetService("ReplicatedStorage")
+    local FA_Workspace = game:GetService("Workspace")
+    local FA_VirtualInputManager = game:GetService("VirtualInputManager")
+
+    local FA_Player = FA_Players.LocalPlayer
+    local FA_Modules = FA_ReplicatedStorage:WaitForChild("Modules")
+    local FA_Net = FA_Modules:WaitForChild("Net")
+    local FA_RegisterAttack = FA_Net:WaitForChild("RE/RegisterAttack")
+    local FA_RegisterHit = FA_Net:WaitForChild("RE/RegisterHit")
+    local FA_ShootGunEvent = FA_Net:WaitForChild("RE/ShootGunEvent")
+    local FA_GunValidator = FA_ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Validator2")
+
+    local FA_Config = {
+        AttackDistance = 200,
+        AttackMobs = true,
+        AttackPlayers = true,
+        AttackCooldown = 0.2,
+        ComboResetTime = 0.3,
+        MaxCombo = 4,
+        HitboxLimbs = {"RightLowerArm", "RightUpperArm", "LeftLowerArm", "LeftUpperArm", "RightHand", "LeftHand"},
+        AutoClickEnabled = true
+    }
+
+    local FastAttackClass = {}
+    FastAttackClass.__index = FastAttackClass
+
+    function FastAttackClass.new()
+        local self = setmetatable({
+            Debounce = 0,
+            ComboDebounce = 0,
+            ShootDebounce = 0,
+            M1Combo = 0,
+            EnemyRootPart = nil,
+            Connections = {},
+            Overheat = {Dragonstorm = {MaxOverheat = 3, Cooldown = 0, TotalOverheat = 0, Distance = 350, Shooting = false}},
+            ShootsPerTarget = {["Dual Flintlock"] = 2},
+            SpecialShoots = {["Skull Guitar"] = "TAP", ["Bazooka"] = "Position", ["Cannon"] = "Position", ["Dragonstorm"] = "Overheat"}
+        }, FastAttackClass)
+        
+        pcall(function()
+            self.CombatFlags = require(FA_Modules.Flags).COMBAT_REMOTE_THREAD
+            self.ShootFunction = getupvalue(require(FA_ReplicatedStorage.Controllers.CombatController).Attack, 9)
+            local LocalScript = FA_Player:WaitForChild("PlayerScripts"):FindFirstChildOfClass("LocalScript")
+            if LocalScript and getsenv then
+                self.HitFunction = getsenv(LocalScript)._G.SendHitsToServer
+            end
+        end)
+        
+        return self
+    end
+
+    function FastAttackClass:IsEntityAlive(entity)
+        local humanoid = entity and entity:FindFirstChild("Humanoid")
+        return humanoid and humanoid.Health > 0
+    end
+
+    function FastAttackClass:CheckStun(Character, Humanoid, ToolTip)
+        local Stun = Character:FindFirstChild("Stun")
+        local Busy = Character:FindFirstChild("Busy")
+        if Humanoid.Sit and (ToolTip == "Sword" or ToolTip == "Melee" or ToolTip == "Blox Fruit") then
+            return false
+        elseif Stun and Stun.Value > 0 or Busy and Busy.Value then
+            return false
+        end
+        return true
+    end
+
+    function FastAttackClass:GetBladeHitsFA(Character, Distance)
+        local Position = Character:GetPivot().Position
+        local BladeHits = {}
+        Distance = Distance or FA_Config.AttackDistance
+        
+        local function ProcessTargets(Folder, CanAttack)
+            for _, Enemy in ipairs(Folder:GetChildren()) do
+                if Enemy ~= Character and self:IsEntityAlive(Enemy) then
+                    local BasePart = Enemy:FindFirstChild(FA_Config.HitboxLimbs[math.random(#FA_Config.HitboxLimbs)]) or Enemy:FindFirstChild("HumanoidRootPart")
+                    if BasePart and (Position - BasePart.Position).Magnitude <= Distance then
+                        if not self.EnemyRootPart then
+                            self.EnemyRootPart = BasePart
+                        else
+                            table.insert(BladeHits, {Enemy, BasePart})
+                        end
+                    end
+                end
+            end
+        end
+        
+        if FA_Config.AttackMobs then ProcessTargets(FA_Workspace.Enemies) end
+        if FA_Config.AttackPlayers then ProcessTargets(FA_Workspace.Characters, true) end
+        
+        return BladeHits
+    end
+
+    function FastAttackClass:GetClosestEnemy(Character, Distance)
+        local BladeHits = self:GetBladeHitsFA(Character, Distance)
+        local Closest, MinDistance = nil, math.huge
+        
+        for _, Hit in ipairs(BladeHits) do
+            local Magnitude = (Character:GetPivot().Position - Hit[2].Position).Magnitude
+            if Magnitude < MinDistance then
+                MinDistance = Magnitude
+                Closest = Hit[2]
+            end
+        end
+        return Closest
+    end
+
+    function FastAttackClass:GetCombo()
+        local Combo = (tick() - self.ComboDebounce) <= FA_Config.ComboResetTime and self.M1Combo or 0
+        Combo = Combo >= FA_Config.MaxCombo and 1 or Combo + 1
+        self.ComboDebounce = tick()
+        self.M1Combo = Combo
+        return Combo
+    end
+
+    function FastAttackClass:ShootInTarget(TargetPosition)
+        local Character = FA_Player.Character
+        if not self:IsEntityAlive(Character) then return end
+        
+        local Equipped = Character:FindFirstChildOfClass("Tool")
+        if not Equipped or Equipped.ToolTip ~= "Gun" then return end
+        
+        local Cooldown = Equipped:FindFirstChild("Cooldown") and Equipped.Cooldown.Value or 0.3
+        if (tick() - self.ShootDebounce) < Cooldown then return end
+        
+        local ShootType = self.SpecialShoots[Equipped.Name] or "Normal"
+        if ShootType == "Position" or (ShootType == "TAP" and Equipped:FindFirstChild("RemoteEvent")) then
+            Equipped:SetAttribute("LocalTotalShots", (Equipped:GetAttribute("LocalTotalShots") or 0) + 1)
+            FA_GunValidator:FireServer(self:GetValidator2())
+            
+            if ShootType == "TAP" then
+                Equipped.RemoteEvent:FireServer("TAP", TargetPosition)
+            else
+                FA_ShootGunEvent:FireServer(TargetPosition)
+            end
+            self.ShootDebounce = tick()
+        else
+            FA_VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+            task.wait(0.05)
+            FA_VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+            self.ShootDebounce = tick()
+        end
+    end
+
+    function FastAttackClass:GetValidator2()
+        local v1 = getupvalue(self.ShootFunction, 15)
+        local v2 = getupvalue(self.ShootFunction, 13)
+        local v3 = getupvalue(self.ShootFunction, 16)
+        local v4 = getupvalue(self.ShootFunction, 17)
+        local v5 = getupvalue(self.ShootFunction, 14)
+        local v6 = getupvalue(self.ShootFunction, 12)
+        local v7 = getupvalue(self.ShootFunction, 18)
+        
+        local v8 = v6 * v2
+        local v9 = (v5 * v2 + v6 * v1) % v3
+        v9 = (v9 * v3 + v8) % v4
+        v5 = math.floor(v9 / v3)
+        v6 = v9 - v5 * v3
+        v7 = v7 + 1
+        
+        setupvalue(self.ShootFunction, 15, v1)
+        setupvalue(self.ShootFunction, 13, v2)
+        setupvalue(self.ShootFunction, 16, v3)
+        setupvalue(self.ShootFunction, 17, v4)
+        setupvalue(self.ShootFunction, 14, v5)
+        setupvalue(self.ShootFunction, 12, v6)
+        setupvalue(self.ShootFunction, 18, v7)
+        
+        return math.floor(v9 / v4 * 16777215), v7
+    end
+
+    function FastAttackClass:UseNormalClick(Character, Humanoid, Cooldown)
+        self.EnemyRootPart = nil
+        local BladeHits = self:GetBladeHitsFA(Character)
+        
+        if self.EnemyRootPart then
+            FA_RegisterAttack:FireServer(Cooldown)
+            if self.CombatFlags and self.HitFunction then
+                self.HitFunction(self.EnemyRootPart, BladeHits)
+            else
+                FA_RegisterHit:FireServer(self.EnemyRootPart, BladeHits)
+            end
+        end
+    end
+
+    function FastAttackClass:UseFruitM1(Character, Equipped, Combo)
+        local Targets = self:GetBladeHitsFA(Character)
+        if not Targets[1] then return end
+        
+        local Direction = (Targets[1][2].Position - Character:GetPivot().Position).Unit
+        Equipped.LeftClickRemote:FireServer(Direction, Combo)
+    end
+
+    function FastAttackClass:Attack()
+        if not FA_Config.AutoClickEnabled or (tick() - self.Debounce) < FA_Config.AttackCooldown then return end
+        local Character = FA_Player.Character
+        if not Character or not self:IsEntityAlive(Character) then return end
+        
+        local Humanoid = Character.Humanoid
+        local Equipped = Character:FindFirstChildOfClass("Tool")
+        if not Equipped then return end
+        
+        local ToolTip = Equipped.ToolTip
+        if not table.find({"Melee", "Blox Fruit", "Sword", "Gun"}, ToolTip) then return end
+        
+        local Cooldown = Equipped:FindFirstChild("Cooldown") and Equipped.Cooldown.Value or FA_Config.AttackCooldown
+        if not self:CheckStun(Character, Humanoid, ToolTip) then return end
+        
+        local Combo = self:GetCombo()
+        Cooldown = Cooldown + (Combo >= FA_Config.MaxCombo and 0.05 or 0)
+        self.Debounce = Combo >= FA_Config.MaxCombo and ToolTip ~= "Gun" and (tick() + 0.05) or tick()
+        
+        if ToolTip == "Blox Fruit" and Equipped:FindFirstChild("LeftClickRemote") then
+            self:UseFruitM1(Character, Equipped, Combo)
+        elseif ToolTip == "Gun" then
+            local Target = self:GetClosestEnemy(Character, 120)
+            if Target then
+                self:ShootInTarget(Target.Position)
+            end
+        else
+            self:UseNormalClick(Character, Humanoid, Cooldown)
+        end
+    end
+
+    local AttackInstance = FastAttackClass.new()
+    table.insert(AttackInstance.Connections, FA_RunService.Stepped:Connect(function()
+        if Config.FastAttack then
+            AttackInstance:Attack()
+        end
+    end))
+
+    pcall(function()
+        for _, v in pairs(getgc(true)) do
+            if typeof(v) == "function" and iscclosure(v) then
+                local name = debug.getinfo(v).name
+                if name == "Attack" or name == "attack" or name == "RegisterHit" then
+                    hookfunction(v, function(...)
+                        if Config.FastAttack then
+                            AttackInstance:Attack()
+                        end
+                        return v(...)
+                    end)
+                end
+            end
+        end
+    end)
+
+    ---Fast 2 ---
+    local FA2_Modules = game.ReplicatedStorage.Modules
+    local FA2_Net = FA2_Modules.Net
+    local FA2_Register_Hit, FA2_Register_Attack = FA2_Net:WaitForChild("RE/RegisterHit"), FA2_Net:WaitForChild("RE/RegisterAttack")
+    local FA2_Funcs = {}
+    function GetAllBladeHits_FA2()
+        local bladehits = {}
+        for _, v in pairs(workspace.Enemies:GetChildren()) do
+            if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 
+            and (v.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 65 then
+                table.insert(bladehits, v)
+            end
+        end
+        return bladehits
+    end
+    function Getplayerhit_FA2()
+        local bladehits = {}
+        for _, v in pairs(workspace.Characters:GetChildren()) do
+            if v.Name ~= game.Players.LocalPlayer.Name and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 
+            and (v.HumanoidRootPart.Position - game.Players.LocalPlayer.Character.HumanoidRootPart.Position).Magnitude <= 65 then
+                table.insert(bladehits, v)
+            end
+        end
+        return bladehits
+    end
+    function FA2_Funcs:Attack()
+        local bladehits = {}
+        for r,v in pairs(GetAllBladeHits_FA2()) do
+            table.insert(bladehits, v)
+        end
+        for r,v in pairs(Getplayerhit_FA2()) do
+            table.insert(bladehits, v)
+        end
+        if #bladehits == 0 then return end
+        local args = {
+            [1] = nil;
+            [2] = {},
+            [4] = "078da341"
+        }
+        for r, v in pairs(bladehits) do
+            FA2_Register_Attack:FireServer(0)
+            if not args[1] then
+                args[1] = v.Head
+            end
+            args[2][r] = {
+                [1] = v,
+                [2] = v.HumanoidRootPart
+            }
+        end
+        FA2_Register_Hit:FireServer(unpack(args))
+    end
+end
+
+------------------------------------------------------------------------
+-- MODULE 10: MOBILE TOGGLE BUTTON
+------------------------------------------------------------------------
+do
+    local TweenService_UI = game:GetService("TweenService")
+    local ToggleGui = Instance.new("ScreenGui")
+    ToggleGui.Name = "ARAKS_ToggleGui"
+    ToggleGui.ResetOnSpawn = false
+    ToggleGui.DisplayOrder = 999
+    ToggleGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Name = "ToggleButton"
+    ToggleBtn.Size = UDim2.new(0,42,0,42)
+    ToggleBtn.Position = UDim2.new(0,15,0.5,-25)
+    ToggleBtn.AnchorPoint = Vector2.new(0,0.5)
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(88,55,175)
+    ToggleBtn.Text = "ARAKS"
+    ToggleBtn.TextColor3 = Color3.fromRGB(100,200,255)
+    ToggleBtn.TextSize = 10
+    ToggleBtn.Font = Enum.Font.GothamBlack
+    ToggleBtn.AutoButtonColor = true
+    ToggleBtn.Parent = ToggleGui
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(1,0)
+    Corner.Parent = ToggleBtn
+    local Gradient = Instance.new("UIGradient")
+    Gradient.Color = ColorSequence.new({ColorSequenceKeypoint.new(0, Color3.fromRGB(20,30,60)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(40,80,140)), ColorSequenceKeypoint.new(1, Color3.fromRGB(20,30,60))})
+    Gradient.Rotation = 45
+    Gradient.Parent = ToggleBtn
+    local Stroke = Instance.new("UIStroke")
+    Stroke.Color = Color3.fromRGB(80,170,255)
+    Stroke.Thickness = 2
+    Stroke.Parent = ToggleBtn
+    local dragging, dragInput, dragStart, startPos = false, nil, nil, nil
+    ToggleBtn.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true; dragStart = input.Position; startPos = ToggleBtn.Position; dragInput = input
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+        end
+    end)
+    ToggleBtn.InputChanged:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end end)
+    RunService.RenderStepped:Connect(function() if dragging and dragInput then local delta = dragInput.Position - dragStart; ToggleBtn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y) end end)
+    ToggleBtn.MouseButton1Click:Connect(function() Window:Minimize(); local tweenShrink = TweenService_UI:Create(ToggleBtn, TweenInfo.new(0.1), {Size = UDim2.new(0,42,0,42)}); local tweenGrow = TweenService_UI:Create(ToggleBtn, TweenInfo.new(0.1), {Size = UDim2.new(0,42,0,42)}); tweenShrink:Play(); tweenShrink.Completed:Connect(function() tweenGrow:Play() end) end)
+    task.spawn(function() while task.wait(2) do pcall(function() local pulse = TweenService_UI:Create(Stroke, TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, 0, true), {Color = Color3.fromRGB(120,220,255)}); pulse:Play() end) end end)
+end
+
+------------------------------------------------------------------------
+-- NEW FEATURE: FRUITS TAB (مع نظام الضرب الجديد لصيد اللولويات - مربوط بالتفعيل)
+------------------------------------------------------------------------
+do
+    Tabs.Fruits:AddParagraph({Title = "🍎 Fruit Hunter | صيد الفواكه", Content = ""})
+    Tabs.Fruits:AddToggle("GoToFruitToggle", { Title = "Go to Fruit | الذهاب للفاكهة 🚀", Default = false, Callback = function(v) Config.GoToFruitActive = v end })
+    Tabs.Fruits:AddParagraph({Title = "🎲 Auto Random Fruit | فتح فاكهة عشوائي تلقائي", Content = ""})
+    local AutoRandomFruit = false
+    Tabs.Fruits:AddToggle("AutoRandomFruitToggle", { Title = "Auto Random Fruit | تشغيل فتح الفاكهة التلقائي", Default = false, Callback = function(v) AutoRandomFruit = v end })
+
+    -- [ نظام الضرب الجديد لصيد اللولويات - مربوط بالتفعيل ]
+    local function GetBladeHits_Fruit()
+        local targets = {}
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return targets end
+        local hrp = char.HumanoidRootPart
+        
+        for _, part in pairs({workspace.Enemies, workspace.Characters}) do
+            for _, v in pairs(part:GetChildren()) do
+                if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Head") and v:FindFirstChild("Humanoid") then
+                    if (v.HumanoidRootPart.Position - hrp.Position).Magnitude < 200 then
+                        table.insert(targets, v)
+                    end
+                end
+            end
+        end
+        return targets
+    end
+
+    local function AttackAll_Fruit()
+        if not Config.GoToFruitActive then return end  -- مهم: مربوط بالتفعيل
+        local player = LocalPlayer
+        local character = player.Character
+        if not character then return end
+        local equippedWeapon = character:FindFirstChild("EquippedWeapon")
+        if not equippedWeapon then return end
+        local enemies = GetBladeHits_Fruit()
+        if #enemies > 0 then
+            local netModule = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+            netModule:WaitForChild("RE/RegisterAttack"):FireServer(-math.huge)
+            local args = {nil, {}}
+            for i, v in pairs(enemies) do
+                if not args[1] then args[1] = v.Head end
+                args[2][i] = {v, v.HumanoidRootPart}
+            end
+            netModule:WaitForChild("RE/RegisterHit"):FireServer(unpack(args))
+        end
+    end
+
+    task.spawn(function()
+        while task.wait() do 
+            if Config.GoToFruitActive then
+                AttackAll_Fruit() 
+            end
+        end
+    end)
+
+    local Fruit_Players = Players
+    local Fruit_RunService = RunService
+    local Fruit_ReplicatedStorage = ReplicatedStorage
+    local Fruit_Workspace = workspace
+    local Fruit_VirtualInputManager = VIM
+
+    local Fruit_Player = Fruit_Players.LocalPlayer
+    local Fruit_Modules = Fruit_ReplicatedStorage:WaitForChild("Modules")
+    local Fruit_Net = Fruit_Modules:WaitForChild("Net")
+    local Fruit_RegisterAttack = Fruit_Net:WaitForChild("RE/RegisterAttack")
+    local Fruit_RegisterHit = Fruit_Net:WaitForChild("RE/RegisterHit")
+    local Fruit_ShootGunEvent = Fruit_Net:WaitForChild("RE/ShootGunEvent")
+    local Fruit_GunValidator = Fruit_ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Validator2")
+
+    local Fruit_Config = {
+        AttackDistance = 200,
+        AttackMobs = true,
+        AttackPlayers = true,
+        AttackCooldown = 0.2,
+        ComboResetTime = 0.3,
+        MaxCombo = 4,
+        HitboxLimbs = {"RightLowerArm", "RightUpperArm", "LeftLowerArm", "LeftUpperArm", "RightHand", "LeftHand"},
+        AutoClickEnabled = true
+    }
+
+    local FruitFastAttack = {}
+    FruitFastAttack.__index = FruitFastAttack
+
+    function FruitFastAttack.new()
+        local self = setmetatable({
+            Debounce = 0,
+            ComboDebounce = 0,
+            ShootDebounce = 0,
+            M1Combo = 0,
+            EnemyRootPart = nil,
+            Connections = {},
+            Overheat = {Dragonstorm = {MaxOverheat = 3, Cooldown = 0, TotalOverheat = 0, Distance = 350, Shooting = false}},
+            ShootsPerTarget = {["Dual Flintlock"] = 2},
+            SpecialShoots = {["Skull Guitar"] = "TAP", ["Bazooka"] = "Position", ["Cannon"] = "Position", ["Dragonstorm"] = "Overheat"}
+        }, FruitFastAttack)
+        
+        pcall(function()
+            self.CombatFlags = require(Fruit_Modules.Flags).COMBAT_REMOTE_THREAD
+            self.ShootFunction = getupvalue(require(Fruit_ReplicatedStorage.Controllers.CombatController).Attack, 9)
+            local LocalScript = Fruit_Player:WaitForChild("PlayerScripts"):FindFirstChildOfClass("LocalScript")
+            if LocalScript and getsenv then
+                self.HitFunction = getsenv(LocalScript)._G.SendHitsToServer
+            end
+        end)
+        
+        return self
+    end
+
+    function FruitFastAttack:IsEntityAlive(entity)
+        local humanoid = entity and entity:FindFirstChild("Humanoid")
+        return humanoid and humanoid.Health > 0
+    end
+
+    function FruitFastAttack:CheckStun(Character, Humanoid, ToolTip)
+        local Stun = Character:FindFirstChild("Stun")
+        local Busy = Character:FindFirstChild("Busy")
+        if Humanoid.Sit and (ToolTip == "Sword" or ToolTip == "Melee" or ToolTip == "Blox Fruit") then
+            return false
+        elseif Stun and Stun.Value > 0 or Busy and Busy.Value then
+            return false
+        end
+        return true
+    end
+
+    function FruitFastAttack:GetBladeHitsFruit(Character, Distance)
+        local Position = Character:GetPivot().Position
+        local BladeHits = {}
+        Distance = Distance or Fruit_Config.AttackDistance
+        
+        local function ProcessTargets(Folder, CanAttack)
+            for _, Enemy in ipairs(Folder:GetChildren()) do
+                if Enemy ~= Character and self:IsEntityAlive(Enemy) then
+                    local BasePart = Enemy:FindFirstChild(Fruit_Config.HitboxLimbs[math.random(#Fruit_Config.HitboxLimbs)]) or Enemy:FindFirstChild("HumanoidRootPart")
+                    if BasePart and (Position - BasePart.Position).Magnitude <= Distance then
+                        if not self.EnemyRootPart then
+                            self.EnemyRootPart = BasePart
+                        else
+                            table.insert(BladeHits, {Enemy, BasePart})
+                        end
+                    end
+                end
+            end
+        end
+        
+        if Fruit_Config.AttackMobs then ProcessTargets(Fruit_Workspace.Enemies) end
+        if Fruit_Config.AttackPlayers then ProcessTargets(Fruit_Workspace.Characters, true) end
+        
+        return BladeHits
+    end
+
+    function FruitFastAttack:GetClosestEnemy(Character, Distance)
+        local BladeHits = self:GetBladeHitsFruit(Character, Distance)
+        local Closest, MinDistance = nil, math.huge
+        
+        for _, Hit in ipairs(BladeHits) do
+            local Magnitude = (Character:GetPivot().Position - Hit[2].Position).Magnitude
+            if Magnitude < MinDistance then
+                MinDistance = Magnitude
+                Closest = Hit[2]
+            end
+        end
+        return Closest
+    end
+
+    function FruitFastAttack:GetCombo()
+        local Combo = (tick() - self.ComboDebounce) <= Fruit_Config.ComboResetTime and self.M1Combo or 0
+        Combo = Combo >= Fruit_Config.MaxCombo and 1 or Combo + 1
+        self.ComboDebounce = tick()
+        self.M1Combo = Combo
+        return Combo
+    end
+
+    function FruitFastAttack:ShootInTarget(TargetPosition)
+        local Character = Fruit_Player.Character
+        if not self:IsEntityAlive(Character) then return end
+        
+        local Equipped = Character:FindFirstChildOfClass("Tool")
+        if not Equipped or Equipped.ToolTip ~= "Gun" then return end
+        
+        local Cooldown = Equipped:FindFirstChild("Cooldown") and Equipped.Cooldown.Value or 0.3
+        if (tick() - self.ShootDebounce) < Cooldown then return end
+        
+        local ShootType = self.SpecialShoots[Equipped.Name] or "Normal"
+        if ShootType == "Position" or (ShootType == "TAP" and Equipped:FindFirstChild("RemoteEvent")) then
+            Equipped:SetAttribute("LocalTotalShots", (Equipped:GetAttribute("LocalTotalShots") or 0) + 1)
+            Fruit_GunValidator:FireServer(self:GetValidator2())
+            
+            if ShootType == "TAP" then
+                Equipped.RemoteEvent:FireServer("TAP", TargetPosition)
+            else
+                Fruit_ShootGunEvent:FireServer(TargetPosition)
+            end
+            self.ShootDebounce = tick()
+        else
+            Fruit_VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+            task.wait(0.05)
+            Fruit_VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+            self.ShootDebounce = tick()
+        end
+    end
+
+    function FruitFastAttack:GetValidator2()
+        local v1 = getupvalue(self.ShootFunction, 15)
+        local v2 = getupvalue(self.ShootFunction, 13)
+        local v3 = getupvalue(self.ShootFunction, 16)
+        local v4 = getupvalue(self.ShootFunction, 17)
+        local v5 = getupvalue(self.ShootFunction, 14)
+        local v6 = getupvalue(self.ShootFunction, 12)
+        local v7 = getupvalue(self.ShootFunction, 18)
+        
+        local v8 = v6 * v2
+        local v9 = (v5 * v2 + v6 * v1) % v3
+        v9 = (v9 * v3 + v8) % v4
+        v5 = math.floor(v9 / v3)
+        v6 = v9 - v5 * v3
+        v7 = v7 + 1
+        
+        setupvalue(self.ShootFunction, 15, v1)
+        setupvalue(self.ShootFunction, 13, v2)
+        setupvalue(self.ShootFunction, 16, v3)
+        setupvalue(self.ShootFunction, 17, v4)
+        setupvalue(self.ShootFunction, 14, v5)
+        setupvalue(self.ShootFunction, 12, v6)
+        setupvalue(self.ShootFunction, 18, v7)
+        
+        return math.floor(v9 / v4 * 16777215), v7
+    end
+
+    function FruitFastAttack:UseNormalClick(Character, Humanoid, Cooldown)
+        self.EnemyRootPart = nil
+        local BladeHits = self:GetBladeHitsFruit(Character)
+        
+        if self.EnemyRootPart then
+            Fruit_RegisterAttack:FireServer(Cooldown)
+            if self.CombatFlags and self.HitFunction then
+                self.HitFunction(self.EnemyRootPart, BladeHits)
+            else
+                Fruit_RegisterHit:FireServer(self.EnemyRootPart, BladeHits)
+            end
+        end
+    end
+
+    function FruitFastAttack:UseFruitM1(Character, Equipped, Combo)
+        local Targets = self:GetBladeHitsFruit(Character)
+        if not Targets[1] then return end
+        
+        local Direction = (Targets[1][2].Position - Character:GetPivot().Position).Unit
+        Equipped.LeftClickRemote:FireServer(Direction, Combo)
+    end
+
+    function FruitFastAttack:Attack()
+        if not Config.GoToFruitActive then return end  -- مربوط بالتفعيل
+        if not Fruit_Config.AutoClickEnabled or (tick() - self.Debounce) < Fruit_Config.AttackCooldown then return end
+        local Character = Fruit_Player.Character
+        if not Character or not self:IsEntityAlive(Character) then return end
+        
+        local Humanoid = Character.Humanoid
+        local Equipped = Character:FindFirstChildOfClass("Tool")
+        if not Equipped then return end
+        
+        local ToolTip = Equipped.ToolTip
+        if not table.find({"Melee", "Blox Fruit", "Sword", "Gun"}, ToolTip) then return end
+        
+        local Cooldown = Equipped:FindFirstChild("Cooldown") and Equipped.Cooldown.Value or Fruit_Config.AttackCooldown
+        if not self:CheckStun(Character, Humanoid, ToolTip) then return end
+        
+        local Combo = self:GetCombo()
+        Cooldown = Cooldown + (Combo >= Fruit_Config.MaxCombo and 0.05 or 0)
+        self.Debounce = Combo >= Fruit_Config.MaxCombo and ToolTip ~= "Gun" and (tick() + 0.05) or tick()
+        
+        if ToolTip == "Blox Fruit" and Equipped:FindFirstChild("LeftClickRemote") then
+            self:UseFruitM1(Character, Equipped, Combo)
+        elseif ToolTip == "Gun" then
+            local Target = self:GetClosestEnemy(Character, 120)
+            if Target then
+                self:ShootInTarget(Target.Position)
+            end
+        else
+            self:UseNormalClick(Character, Humanoid, Cooldown)
+        end
+    end
+
+    local FruitAttackInstance = FruitFastAttack.new()
+    table.insert(FruitAttackInstance.Connections, Fruit_RunService.Stepped:Connect(function()
+        if Config.GoToFruitActive then
+            FruitAttackInstance:Attack()
+        end
+    end))
+
+    pcall(function()
+        for _, v in pairs(getgc(true)) do
+            if typeof(v) == "function" and iscclosure(v) then
+                local name = debug.getinfo(v).name
+                if name == "Attack" or name == "attack" or name == "RegisterHit" then
+                    hookfunction(v, function(...)
+                        if Config.GoToFruitActive then
+                            FruitAttackInstance:Attack()
+                        end
+                        return v(...)
+                    end)
+                end
+            end
+        end
+    end)
+
+    -- [ نظام الضرب المبسط للفواكه - مربوط بالتفعيل ]
+    local function SimpleAttack_Fruit()
+        if not Config.GoToFruitActive then return end
+        local bladehits = {}
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        local hrp = char.HumanoidRootPart
+        
+        for _, v in pairs(workspace.Enemies:GetChildren()) do
+            if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 
+            and (v.HumanoidRootPart.Position - hrp.Position).Magnitude <= 65 then
+                table.insert(bladehits, v)
+            end
+        end
+        for _, v in pairs(workspace.Characters:GetChildren()) do
+            if v.Name ~= LocalPlayer.Name and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 
+            and (v.HumanoidRootPart.Position - hrp.Position).Magnitude <= 65 then
+                table.insert(bladehits, v)
+            end
+        end
+        
+        if #bladehits == 0 then return end
+        local args = {[1] = nil, [2] = {}, [4] = "078da341"}
+        local netModule = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Net")
+        local regAttack = netModule:WaitForChild("RE/RegisterAttack")
+        local regHit = netModule:WaitForChild("RE/RegisterHit")
+        
+        for r, v in pairs(bladehits) do
+            regAttack:FireServer(0)
+            if not args[1] then args[1] = v.Head end
+            args[2][r] = {[1] = v, [2] = v.HumanoidRootPart}
+        end
+        regHit:FireServer(unpack(args))
+    end
+
+    task.spawn(function()
+        while true do
+            task.wait(0.1)
+            if Config.GoToFruitActive then
+                pcall(function()
+                    local fruit = nil
+                    for _, v in pairs(workspace:GetChildren()) do
+                        if v:IsA("Tool") or (v:IsA("Model") and v:FindFirstChild("Handle") and v.Name:lower():find("fruit")) then
+                            fruit = v
+                            break
+                        end
+                    end
+                    if fruit then
+                        local handle = fruit:FindFirstChild("Handle") or fruit
+                        local hrp = LocalPlayer.Character.HumanoidRootPart
+                        local dist = (hrp.Position - handle.Position).Magnitude
+                        if dist > 10 then
+                            local tween = TweenService:Create(hrp, TweenInfo.new(dist / 180, Enum.EasingStyle.Linear), {CFrame = handle.CFrame * CFrame.new(0, 3, 0)})
+                            tween:Play()
+                            tween.Completed:Wait()
+                        end
+                        SimpleAttack_Fruit()
+                    end
+                end)
+            end
+        end
+    end)
+
+    task.spawn(function()
+        while true do
+            task.wait(2)
+            if AutoRandomFruit then
+                pcall(function()
+                    local Remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("CommF_")
+                    for i = 1, 3 do
+                        pcall(function() Remote:InvokeServer("Cousin", "Buy") end)
+                        task.wait(0.5)
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+------------------------------------------------------------------------
+-- NEW FEATURE: SEA TAB
+------------------------------------------------------------------------
+do
+    Tabs.Sea:AddParagraph({Title = "🚤 Boat Controls | التحكم بالقارب", Content = ""})
+    local BoatSpeedToggle = false
+    local BoatFlyToggle = false
+    local BoatSpeedValue = 2
+    local BoatFlyHeight = 50
+    Tabs.Sea:AddToggle("BoatSpeedToggle", { Title = "Boat Speed | زيادة سرعة القارب", Default = false, Callback = function(v) BoatSpeedToggle = v end })
+    Tabs.Sea:AddDropdown("BoatSpeedDropdown", { Title = "Speed Amount | مقدار السرعة", Values = {"1x", "2x", "3x", "4x", "5x", "6x", "7x", "8x", "9x", "10x"}, Default = "2x", Multi = false, Callback = function(v) local num = tonumber(v:match("%d+")); BoatSpeedValue = num or 2 end })
+    Tabs.Sea:AddToggle("BoatFlyToggle", { Title = "Boat Fly | طيران القارب", Default = false, Callback = function(v) BoatFlyToggle = v end })
+    Tabs.Sea:AddDropdown("BoatFlyHeightDropdown", { Title = "Fly Height | ارتفاع الطيران", Values = {"0", "25", "50", "75", "100", "125", "135"}, Default = "50", Multi = false, Callback = function(v) BoatFlyHeight = tonumber(v) or 50 end })
+
+    RunService.Heartbeat:Connect(function()
+        pcall(function()
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("Humanoid") then
+                local seat = char.Humanoid.SeatPart
+                if seat and seat:IsA("VehicleSeat") then
+                    if BoatFlyToggle then
+                        seat.Velocity = Vector3.new(seat.Velocity.X, 0, seat.Velocity.Z)
+                        seat.CFrame = CFrame.new(seat.Position.X, BoatFlyHeight, seat.Position.Z) * seat.CFrame.Rotation
+                    end
+                    if BoatSpeedToggle and seat.Throttle ~= 0 then
+                        seat.CFrame = seat.CFrame * CFrame.new(0, 0, -seat.Throttle * BoatSpeedValue)
+                    end
+                end
+            end
+        end)
+    end)
+end
+
+------------------------------------------------------------------------
+-- NEW FEATURE: CAKE ISLAND FARM
+------------------------------------------------------------------------
+do
+    Tabs.Farm:AddParagraph({Title = "🍰 Cake Island Farm | مزرعة كيك أيلاند", Content = ""})
+    local CakeConfig = { AutoFarm = false, Height = 40, TravelSpeed = 380, IslandCenter = Vector3.new(-1150, 15, -12250) }
+    local EnemiesList = { "Cookie Crafter", "Cake Guard", "Baking Staff", "Head Baker", "Cake Prince", "Dough King" }
+    local CakePlatform = Instance.new("Part", workspace)
+    CakePlatform.Size = Vector3.new(20, 1, 20)
+    CakePlatform.Transparency = 1 
+    CakePlatform.Anchored = true
+    CakePlatform.CanCollide = true
+
+    local function CakeFastAttack(target)
+        if not target or not target:FindFirstChild("HumanoidRootPart") then return end
+        local myID = ""
+        pcall(function() local upvals = getupvalues(getrenv()._G.SendHitsToServer); myID = tostring(LocalPlayer.UserId):sub(2,4)..tostring(upvals[1]):sub(11,15) end)
+        Net["RE/RegisterAttack"]:FireServer(0)
+        Net["RE/RegisterHit"]:FireServer(target.HumanoidRootPart, {}, nil, myID)
+    end
+
+    Tabs.Farm:AddButton({ Title = "Travel to Island | الذهاب للجزيرة", Callback = function()
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        local dist = (hrp.Position - CakeConfig.IslandCenter).Magnitude
+        local tween = TweenService:Create(hrp, TweenInfo.new(dist/CakeConfig.TravelSpeed, Enum.EasingStyle.Linear), {CFrame = CFrame.new(CakeConfig.IslandCenter + Vector3.new(0, 50, 0))})
+        tween:Play()
+        task.spawn(function()
+            while tween.PlaybackState == Enum.PlaybackState.Playing do CakePlatform.CFrame = hrp.CFrame * CFrame.new(0, -3.5, 0); task.wait() end
+            hrp.CFrame = CFrame.new(CakeConfig.IslandCenter + Vector3.new(0, CakeConfig.Height, 0))
+            CakePlatform.CFrame = hrp.CFrame * CFrame.new(0, -3.5, 0)
+        end)
+    end })
+
+    Tabs.Farm:AddToggle("AutoCakeFarm", { Title = "Auto Farm | تشغيل التفريم", Default = false, Callback = function(v) CakeConfig.AutoFarm = v end })
+
+    task.spawn(function()
+        while task.wait() do
+            if CakeConfig.AutoFarm then
+                pcall(function()
+                    local hrp = LocalPlayer.Character.HumanoidRootPart
+                    local target = nil
+                    for _, v in pairs(workspace.Enemies:GetChildren()) do if table.find(EnemiesList, v.Name) and v.Humanoid.Health > 0 then target = v; break end end
+                    if target then
+                        hrp.Velocity = Vector3.zero
+                        local targetPos = target.HumanoidRootPart.CFrame * CFrame.new(0, CakeConfig.Height, 0)
+                        hrp.CFrame = targetPos
+                        CakePlatform.CFrame = targetPos * CFrame.new(0, -3.5, 0)
+                        CakeFastAttack(target)
+                    else
+                        hrp.CFrame = CFrame.new(CakeConfig.IslandCenter + Vector3.new(0, CakeConfig.Height, 0))
+                        CakePlatform.CFrame = hrp.CFrame * CFrame.new(0, -3.5, 0)
+                    end
+                end)
+            else CakePlatform.CFrame = CFrame.new(0, -1000, 0) end
+        end
+    end)
+end
+
+------------------------------------------------------------------------
+-- NEW FEATURE: BONES FARM
+------------------------------------------------------------------------
+do
+    Tabs.Farm:AddParagraph({Title = "🦴 Bones Farm | مزرعة العظام", Content = ""})
+    local BonesConfig = { AutoBones = false, AutoBuy = false, Height = 40, IslandPos = Vector3.new(-9515, 164, 5780) }
+    local BoneEnemies = {"Reborn Skeleton", "Living Zombie", "Possessed Mummy", "Demonic Soul"}
+
+    Tabs.Farm:AddButton({ Title = "Teleport to Island | انتقال للجزيرة", Callback = function()
+        local hrp = LocalPlayer.Character.HumanoidRootPart
+        local dist = (hrp.Position - BonesConfig.IslandPos).Magnitude
+        TweenService:Create(hrp, TweenInfo.new(dist/300, Enum.EasingStyle.Linear), {CFrame = CFrame.new(BonesConfig.IslandPos)}):Play()
+    end })
+
+    Tabs.Farm:AddToggle("AutoBonesToggle", { Title = "Bones Farm | مزرعة العظام", Default = false, Callback = function(v) BonesConfig.AutoBones = v end })
+    Tabs.Farm:AddToggle("AutoBuyBonesToggle", { Title = "Auto Buy | شراء تلقائي", Default = false, Callback = function(v) BonesConfig.AutoBuy = v end })
+
+    local BonesPlatform = Instance.new("Part")
+    BonesPlatform.Size = Vector3.new(15, 1, 15)
+    BonesPlatform.Transparency = 1 
+    BonesPlatform.Anchored = true
+    BonesPlatform.Parent = workspace
+
+    local function BonesAttack(target)
+        if not target or not target:FindFirstChild("HumanoidRootPart") then return end
+        local myID = ""
+        pcall(function() local upvals = getupvalues(getrenv()._G.SendHitsToServer); myID = tostring(LocalPlayer.UserId):sub(2,4)..tostring(upvals[1]):sub(11,15) end)
+        Net["RE/RegisterAttack"]:FireServer(0.125)
+        local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+        if tool then tool:Activate() end
+        Net["RE/RegisterHit"]:FireServer(target.HumanoidRootPart, {}, nil, myID)
+    end
+
+    task.spawn(function() while task.wait(6) do if BonesConfig.AutoBuy then ReplicatedStorage.Remotes.CommF_:InvokeServer("Bones", "Buy", 1, 1) end end end)
+
+    task.spawn(function()
+        while task.wait() do
+            if BonesConfig.AutoBones then
+                pcall(function()
+                    local target = nil
+                    local char = LocalPlayer.Character
+                    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+                    local hrp = char.HumanoidRootPart
+                    for _, name in pairs(BoneEnemies) do
+                        for _, v in pairs(workspace.Enemies:GetChildren()) do if v.Name == name and v.Humanoid.Health > 0 then target = v; break end end
+                        if target then break end
+                    end
+                    if target then
+                        hrp.Velocity = Vector3.zero
+                        while BonesConfig.AutoBones and target.Parent and target.Humanoid.Health > 0 do
+                            local targetPos = target.HumanoidRootPart.CFrame * CFrame.new(0, BonesConfig.Height, 0)
+                            hrp.CFrame = targetPos
+                            BonesPlatform.CFrame = targetPos * CFrame.new(0, -3.5, 0)
+                            BonesAttack(target)
+                            task.wait(0.1)
+                        end
+                    else
+                        if char and char:FindFirstChild("HumanoidRootPart") then BonesPlatform.CFrame = hrp.CFrame * CFrame.new(0, -3.5, 0) end
+                    end
+                end)
+            else BonesPlatform.CFrame = CFrame.new(0, -1000, 0) end
+        end
+    end)
+end
+
+------------------------------------------------------------------------
+-- NEW FEATURE 1: PRIORITY HUNTER
+------------------------------------------------------------------------
+do
+    Tabs.Farm:AddParagraph({Title = "🎯 Priority Hunter | صيد الأولويات", Content = ""})
+    Config.AutoPriorityFarm = false
+    Tabs.Farm:AddToggle("AutoPriorityToggle", { Title = "Auto Priority | تفعيل صيد الأولويات", Default = false, Callback = function(v) Config.AutoPriorityFarm = v end })
+
+    local function GetPlatform()
+        local p = workspace:FindFirstChild("Araks_Priority_Platform")
+        if not p then p = Instance.new("Part"); p.Name = "Araks_Priority_Platform"; p.Size = Vector3.new(22,1,22); p.Transparency = 1; p.Anchored = true; p.CanCollide = true; p.Parent = workspace end
+        return p
+    end
+    local Platform = GetPlatform()
+    local DetectionRange = 500
+    local function FastAttack(target)
+        if not target or not target:FindFirstChild("HumanoidRootPart") or target.Humanoid.Health <= 0 then return end
+        local myID = ""
+        pcall(function() local upvals = getupvalues(getrenv()._G.SendHitsToServer); myID = tostring(LocalPlayer.UserId):sub(2,4)..tostring(upvals[1]):sub(11,15) end)
+        Net["RE/RegisterAttack"]:FireServer(0)
+        Net["RE/RegisterHit"]:FireServer(target.HumanoidRootPart, {}, nil, myID)
+    end
+    local function isBoss(enemy) return enemy.Humanoid.MaxHealth >= 50000 or (enemy:FindFirstChild("Level") and enemy.Level.Value >= 100) end
+
+    task.spawn(function()
+        while true do
+            task.wait()
+            if Config.AutoPriorityFarm then
+                pcall(function()
+                    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if not hrp then return end
+                    local target = nil
+                    local enemies = workspace.Enemies:GetChildren()
+                    local core = workspace:FindFirstChild("Factory") and workspace.Factory:FindFirstChild("Core")
+                    if core and core:FindFirstChild("Humanoid") and core.Humanoid.Health > 0 and (hrp.Position - core.Position).Magnitude <= DetectionRange then target = core end
+                    if not target then for _, v in pairs(enemies) do if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and (hrp.Position - v.HumanoidRootPart.Position).Magnitude <= DetectionRange and isBoss(v) then target = v; break end end end
+                    if not target then for _, v in pairs(enemies) do if v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and (hrp.Position - v.HumanoidRootPart.Position).Magnitude <= DetectionRange then target = v; break end end end
+                    if target then
+                        local killPos = target.HumanoidRootPart.CFrame * CFrame.new(0,25,0)
+                        hrp.CFrame = killPos
+                        Platform.CFrame = killPos * CFrame.new(0,-3.5,0)
+                        hrp.Velocity = Vector3.zero
+                        FastAttack(target)
+                    else Platform.CFrame = CFrame.new(0,-1000,0) end
+                end)
+            else Platform.CFrame = CFrame.new(0,-1000,0) end
+        end
+    end)
+end
+
+------------------------------------------------------------------------
+-- NEW FEATURE 2: CHEST COLLECTOR
+------------------------------------------------------------------------
+do
+    Tabs.Farm:AddParagraph({Title = "📦 Chest Collector | جمع الصناديق", Content = ""})
+    Config.AutoChest = false
+    Tabs.Farm:AddToggle("AutoChestToggle", { Title = "Auto Chest | تفعيل جمع الصناديق", Default = false, Callback = function(v) Config.AutoChest = v end })
+    local NormalSpeed = 180
+    local FastDistance = 50
+    function getClosestChest()
+        local closestChest, shortestDistance = nil, math.huge
+        for _, v in pairs(workspace:GetDescendants()) do
+            if v:IsA("TouchTransmitter") and v.Parent.Name:find("Chest") then
+                local chest = v.Parent
+                local distance = (LocalPlayer.Character.HumanoidRootPart.Position - chest.Position).Magnitude
+                if distance < shortestDistance then closestChest = chest; shortestDistance = distance end
+            end
+        end
+        return closestChest
+    end
+    task.spawn(function()
+        while true do
+            task.wait(0.1)
+            if Config.AutoChest then
+                pcall(function()
+                    local target = getClosestChest()
+                    if target then
+                        local hrp = LocalPlayer.Character.HumanoidRootPart
+                        local distance = (hrp.Position - target.Position).Magnitude
+                        if distance <= FastDistance then hrp.CFrame = target.CFrame
+                        else
+                            local tween = TweenService:Create(hrp, TweenInfo.new(distance/NormalSpeed, Enum.EasingStyle.Linear), {CFrame = target.CFrame})
+                            tween:Play()
+                            repeat task.wait(); distance = (hrp.Position - target.Position).Magnitude until distance <= FastDistance or not target.Parent or not Config.AutoChest
+                            if distance <= FastDistance then tween:Cancel(); hrp.CFrame = target.CFrame end
+                        end
+                        firetouchinterest(hrp, target, 0); task.wait(0.05); firetouchinterest(hrp, target, 1)
+                    end
+                end)
+            end
+        end
+    end)
+end
+
+------------------------------------------------------------------------
+-- MODULE 11: SETTINGS
+------------------------------------------------------------------------
+do
+    SaveManager:SetLibrary(Fluent)
+    InterfaceManager:SetLibrary(Fluent)
+    SaveManager:IgnoreThemeSettings()
+    SaveManager:SetIgnoreIndexes({})
+    InterfaceManager:SetFolder("ARAKS_HUB")
+    SaveManager:SetFolder("ARAKS_HUB/configs")
+    InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+    SaveManager:BuildConfigSection(Tabs.Settings)
+end
+
+------------------------------------------------------------------------
+-- FINAL
+------------------------------------------------------------------------
+Window:SelectTab(1)
+Fluent:Notify({ Title = "ARAKS HUB | V17", Content = "تم تحميل السكربت بنجاح! | Script Loaded Successfully!\nاسحب الزر الدائري لتحريكه - اضغطه لفتح/إغلاق القائمة", Duration = 8 })
